@@ -1,6 +1,6 @@
 var admin = require("firebase-admin");
 
-var serviceAccount = require("./firebase_key.json");
+var serviceAccount = require("../config/keys/firebase_key.json");
 
 const { getFirestore } = require("firebase-admin/firestore");
 
@@ -52,8 +52,10 @@ const uploadData = async (data) => {
   try {
     // const document = doc(firestoreDb, "users", "testUser");
     // let dataUpdated = await setDoc(document, data);
-    let userId = 1;
-    const res = await firestoreDb.collection("users").doc(userId).set(data);
+
+    // let userId = ;
+    const res = await firestoreDb.collection("users").add(data); // let Firestore create a unique ID
+    // const res = await firestoreDb.collection("users").doc(userId).set(data); // set a specific ID
     console.log("Document written with ID: ", res.id);
     return res.id;
   } catch (error) {
@@ -61,7 +63,16 @@ const uploadData = async (data) => {
   }
 };
 
-const getSpotifyToken = () => {};
+const getSpotifyToken = async (userId) => {
+  const userToken = firestoreDb.collection("users").doc(userId);
+  const doc = await userToken.get();
+  if (!doc.exists) {
+    console.log("No such document!");
+    return null;
+  }
+  console.log("Document data:", doc.data());
+  return doc.data();
+};
 
 const getFirebaseApp = () => app;
 
@@ -69,4 +80,5 @@ module.exports = {
   initializeFirebaseApp,
   uploadData,
   getFirebaseApp,
+  getSpotifyToken,
 };

@@ -6,5 +6,12 @@ const spotifyApi = new SpotifyWebApi({
   redirectUri: process.env.SPOTIFY_REDIRECT_URI,
 });
 
+const scopes = [
+  "playlist-modify-public", // Allow creating public playlists
+  "playlist-modify-private", // Allow creating private playlists
+  "user-read-private", // Read user profile
+  "user-read-email", // Read user email
+];
+
 // Export the single instance to be used across the application, to set and get access tokens
-module.exports = spotifyApi;
+(module.exports = spotifyApi), scopes;

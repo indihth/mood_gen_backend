@@ -1,13 +1,28 @@
 const express = require("express");
 const router = express.Router();
-const spotifyApi = require("../config/spotifyClient");
+const spotifyApi = require("../config/spotify.config");
+const { getSpotifyToken } = require("../services/firebaseServices");
 
 // Middleware to check and set the access token
-router.use((req, res, next) => {
+router.use(async (req, res, next) => {
   const accessToken = spotifyApi.getAccessToken();
-  //   res.send("Spotify API:", accessToken);
+  const userId = "VRGke1ULnDGgL4RsHANG"; // Hardcoded for now
+
   if (!accessToken) {
-    return res.status(401).send("No token provided");
+    try {
+      // Check if db has token
+      const userToken = await getSpotifyToken(userId);
+      console.log("User token:", userToken);
+      if (userToken) {
+        // Set the access token from db
+        spotifyApi.setAccessToken(userToken.access_token);
+      } else {
+        return res.status(401).send("No token provided");
+      }
+    } catch (error) {
+      console.error("Error getting token:", error);
+      return res.status(500).send("Error getting token");
+    }
   }
   next();
 });

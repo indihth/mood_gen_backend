@@ -2,10 +2,9 @@
 const express = require("express");
 // const dotenv = require("dotenv");
 const cors = require("cors");
-const authRoutes = require("./src/routes/auth");
-const spotifyRoutes = require("./src/routes/spotify");
-const firebaseRoutes = require("./src/routes/firebase");
-const { initializeFirebaseApp } = require("./src/services/firebaseServices");
+const sessionMiddleware = require("./src/middleware/session.middleware");
+const { initializeFirebaseApp } = require("./src/config/firebase.config");
+const routes = require("./src/routes");
 
 // Load environment variables
 require("dotenv").config();
@@ -18,11 +17,13 @@ initializeFirebaseApp();
 // Middleware
 app.use(cors()); // allow cross-origin requests
 app.use(express.json()); // parse JSON bodies
+app.use(sessionMiddleware);
 
 // routes
-app.use("/auth", authRoutes);
-app.use("/spotify", spotifyRoutes);
-app.use("/firebase", firebaseRoutes);
+app.use("/api", routes);
+// app.use("/auth", authRoutes);
+// app.use("/spotify", spotifyRoutes);
+// app.use("/firebase", firebaseRoutes);
 
 // Global Error Handler
 app.use((err, req, res, next) => {
