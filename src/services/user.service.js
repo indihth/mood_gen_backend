@@ -5,16 +5,17 @@ const SpotifyService = require("./spotify.service");
 class UserService {
   // High-level business operations
   static async saveSpotifyToken(userId, accessTokenData) {
-    const tokenData = {
+    const tokenData = await {
       ...accessTokenData, // accessToken, refreshToken, expiresIn
       createdAt: new Date(),
       lastUpdated: new Date(),
     };
+    // console.log("accessTokenData UserService: ", accessTokenData);
 
     // Validate token format
-    if (!this.isValidSpotifyToken(tokenData)) {
-      throw new Error("Invalid token format");
-    }
+    // if (!this.isValidSpotifyToken(tokenData)) {
+    //   throw new Error("Invalid token format");
+    // }
 
     // Use FirebaseService for the actual database operation
     await FirebaseService.setDocument("users", userId, {
@@ -22,7 +23,7 @@ class UserService {
     });
 
     // Additional business logic after saving
-    await this.updateUserLastActivity(userId);
+    // await this.updateUserLastActivity(userId);
   }
 
   //   static async getUserProfile(userId) {

@@ -1,7 +1,7 @@
 const express = require("express");
 const router = express.Router();
-const spotifyApi = require("../config/spotify.config");
-const { getSpotifyToken } = require("../services/firebaseServices");
+const spotifyApi = require("../../config/spotify.config");
+const { getSpotifyToken } = require("../../services/firebaseServices");
 
 // Middleware to check and set the access token
 router.use(async (req, res, next) => {

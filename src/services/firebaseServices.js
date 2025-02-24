@@ -27,21 +27,52 @@ const firebaseConfig = {
 };
 
 let app;
-let firestoreDb;
+// let firestoreDb;
 
-const initializeFirebaseApp = () => {
+let firestoreDb = null;
+let isInitializing = false;
+
+const initializeFirebaseApp = async () => {
+  // prevents multiple initializations
+  if (isInitializing) return;
+
   try {
-    // app = initializeApp(firebaseConfig);
-    admin.initializeApp({
-      credential: admin.credential.cert(serviceAccount),
-    });
+    isInitializing = true;
+    if (!admin.apps.length) {
+      admin.initializeApp({
+        credential: admin.credential.cert(serviceAccount),
+      });
+    }
     firestoreDb = admin.firestore();
-    console.log("Firebase app initialized");
-    // return app;
+    console.log("Firebase app initialized - services");
+    isInitializing = false;
+    return firestoreDb;
   } catch (error) {
     console.error("Firebase app not initialized:", error.stack);
+    isInitializing = false;
+    return null;
   }
 };
+
+const getFirestoreDb = () => {
+  if (!firestoreDb) {
+    initializeFirebaseApp();
+  }
+  return firestoreDb;
+};
+// const initializeFirebaseApp = () => {
+//   try {
+//     // app = initializeApp(firebaseConfig);
+//     admin.initializeApp({
+//       credential: admin.credential.cert(serviceAccount),
+//     });
+//     firestoreDb = admin.firestore();
+//     console.log("Firebase app initialized");
+//     // return app;
+//   } catch (error) {
+//     console.error("Firebase app not initialized:", error.stack);
+//   }
+// };
 
 const uploadData = async (data) => {
   //   const data = {
@@ -81,4 +112,5 @@ module.exports = {
   uploadData,
   getFirebaseApp,
   getSpotifyToken,
+  getFirestoreDb, // Add this export
 };

@@ -2,12 +2,15 @@
 const express = require("express");
 const router = express.Router();
 const { verifyFirebaseToken } = require("../../middleware/auth.middleware");
+const spotifyAuthMiddleware = require("../../middleware/spotifyAuth.middleware");
 const SpotifyService = require("../../services/spotify.service");
+const UserService = require("../../services/user.service");
 const { spotifyApi, scopes } = require("../../config/spotify.config");
 
 // initial point for users to authenticate
-router.get("/login", verifyFirebaseToken, (req, res) => {
-  req.session.userId = req.user.uid; // Set the user ID in the session
+router.get("/login", (req, res) => {
+  // router.get("/login", verifyFirebaseToken, (req, res) => {
+  // req.session.userId = req.user.uid; // Set the user ID in the session
   res.redirect(spotifyApi.createAuthorizeURL(scopes));
 });
 
@@ -21,9 +24,10 @@ router.get("/login", verifyFirebaseToken, (req, res) => {
 // Spotify redirects user back to this endpoint after auth, with access token
 router.get("/callback", async (req, res) => {
   // Check if user is logged in
-  const userId = req.session.userId;
+  let userId = req.session.userId;
   if (!userId) {
-    return res.status(401).json({ error: "Session expired" });
+    userId = "50";
+    // return res.status(401).json({ error: "Session expired" });
   }
 
   const error = req.query.error;
@@ -37,6 +41,8 @@ router.get("/callback", async (req, res) => {
 
   try {
     const accessTokenData = await SpotifyService.getAccessToken(req.query.code);
+    // console log accessTokenData to see what it looks like
+    console.log(`accessTokenData: ${accessTokenData}`);
     await UserService.saveSpotifyToken(userId, accessTokenData);
 
     //  OLD CODE
@@ -60,12 +66,47 @@ router.get("/callback", async (req, res) => {
     //       };
     //       uploadData(dataUpload);
 
-    console.log(`access_token: ${accessTokenData.access_token}`);
+    // console.log(`access_token: ${accessTokenData.access_token}`);
     res.send("Success!");
   } catch (error) {
     console.error("Error getting Tokens:", error);
     res.send(`Error getting Tokens: ${error}`);
   }
+});
+
+// Example route to get user's playlists
+router.get("/playlists", spotifyAuthMiddleware, (req, res) => {
+  spotifyApi
+    .getUserPlaylists()
+    .then((data) => {
+      res.json(data.body);
+    })
+    .catch((err) => {
+      console.error("Error fetching playlists:", err);
+      res.status(500).send(`Error fetching playlists: ${err.message}`);
+    });
+});
+
+// Example route to get user's playlists
+router.get("/top", spotifyAuthMiddleware, (req, res) => {
+  spotifyApi
+    .getMyTopTracks("short_term")
+    .then((data) => {
+      // map the data to only return the track name and artist
+      const mappedData = data.body.items.map((track) => {
+        return {
+          name: track.name,
+          artist: track.artists[0].name,
+          album: track.album.name,
+        };
+      });
+      res.json(mappedData);
+      // res.json(data.body);
+    })
+    .catch((err) => {
+      console.error("Error fetching top tracks:", err);
+      res.status(500).send(`Error fetching top tracks: ${err.message}`);
+    });
 });
 
 // OLD CODE
