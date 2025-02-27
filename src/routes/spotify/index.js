@@ -17,11 +17,13 @@ router.get("/login", (req, res) => {
 // Spotify redirects user back to this endpoint after auth, with access token
 router.get("/callback", async (req, res) => {
   // Check if user is logged in
-  let userId = req.session.userId;
-  if (!userId) {
-    // userId = "60";
-    // return res.status(401).json({ error: "Session expired" });
-  }
+  let userId = "90"; // Hardcoded for testing, will be dynamic later
+
+  // let userId = req.session.userId;
+  // if (!userId) {
+  //   userId = "60";
+  //   return res.status(401).json({ error: "Session expired" });
+  // }
 
   const error = req.query.error;
   //   const code = req.query.code;
