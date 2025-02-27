@@ -23,10 +23,10 @@ class SpotifyService {
   }
 
   static async refreshAccessToken() {
-    const userId = "90"; // Hardcoded for now, will be dynamic later
+    const userId = "80"; // Hardcoded for now, will be dynamic later
     try {
       if (!spotifyApi.getRefreshToken()) {
-        const tokenData = await UserService.getUserSpotifyTokenData(userId);
+        const tokenData = await UserService.getSpotifyTokenData(userId);
         const refreshToken = tokenData.data.refresh_token;
         spotifyApi.setRefreshToken(refreshToken);
         console.log("refresh token set in spotifyApi");
@@ -37,24 +37,18 @@ class SpotifyService {
         // throw new Error("No refresh token available");
       }
       const data = await spotifyApi.refreshAccessToken();
-      console.log(`refreshAccessToken data: ${data.body["access_token"]}`);
 
       const tokenData = {
         "spotify.access_token": data.body["access_token"],
-        // 'spotify.refresh_token': data.body["refresh_token"],
         "spotify.expires_in": data.body["expires_in"],
       };
 
       // Set the new access token on the Spotify API instance
-      // spotifyApi.setAccessToken(data.body["access_token"]);
+      spotifyApi.setAccessToken(data.body["access_token"]);
       console.log("spotifyApi.getAccessToken: ", spotifyApi.getAccessToken());
 
-      // Save new access token to db
+      // Save new access token to db - move to middleware?
       await UserService.updateSpotifyToken(userId, tokenData);
-
-      // Verify the new access token saved in db
-      const newTokenData = await UserService.getUserSpotifyTokenData(userId);
-      console.log("newTokenData: ", newTokenData);
 
       return;
     } catch (error) {

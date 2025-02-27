@@ -7,7 +7,7 @@ class UserService {
   static async saveSpotifyToken(userId, accessTokenData) {
     const tokenData = await {
       ...accessTokenData, // accessToken, refreshToken, expiresIn
-      createdAt: new Date(),
+      created_at: new Date(),
       last_updated: new Date(),
     };
     // console.log("accessTokenData UserService: ", accessTokenData);
@@ -55,7 +55,7 @@ class UserService {
   //            tokenData.lastUpdated;
   //   }
 
-  static async getUserSpotifyTokenData(userId) {
+  static async getSpotifyTokenData(userId) {
     try {
       const userDoc = await FirebaseService.getDocument("users", userId);
       // const userDoc = await db.collection("users").doc(userId).get();

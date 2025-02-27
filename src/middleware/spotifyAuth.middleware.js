@@ -3,52 +3,46 @@ const { spotifyApi, scopes } = require("../config/spotify.config");
 const SpotifyService = require("../services/spotify.service");
 const UserService = require("../services/user.service");
 
-const expireTesting = true;
+const expireTesting = false;
 
 const isTokenExpired = (tokenData) => {
-  const testExpiry = 120;
-  const expiryTime = tokenData.createdAt + testExpiry * 1000;
-  // const expiryTime = tokenData.createdAt + tokenData.expires_in * 1000;
+  if (!tokenData?.created_at || !tokenData?.expires_in) {
+    return true;
+  }
+  const now = Date.now();
+  const expiryTime = tokenData.created_at + tokenData.expires_in * 1000;
 
-  console.log(`expiryDate: ${expiryTime}`);
-  return Date.now() > testExpiry; // 3 minutes expiry for testing
-  // return Date.now() > expiryTime;
+  // if token is or is about to expire (buffer of 5 minutes), return true
+  return now >= expiryTime - 300000;
 };
 
 const spotifyAuthMiddleware = async (req, res, next) => {
-  // If access token is already set, move to next middleware
-  if (spotifyApi.getAccessToken()) {
-    console.log(
-      `spotify middleware skipped!, access_token: ${spotifyApi.getAccessToken()}`
-    );
-    return next();
-  }
-  // temp hardcoded for testing - update with firestore auth id later
-  const userId = "90";
+  // const userId = req.session.userId;
+
+  const userId = "80"; // temp hardcoded for testing - update with firestore auth id later
 
   try {
-    // Ensures Firebase is initialized first
-    const db = getFirestoreDb();
+    const db = getFirestoreDb(); // Ensures Firebase is initialized first
 
-    // if Firebase db isn't initialized yet, initialize it
     if (!db) {
+      // if Firebase db isn't initialized yet, initialize it
       console.log("Firestore DB not initialized, initializing now...");
       await initializeFirebaseApp(); // Re-initialize if needed
       db = getFirestoreDb();
 
-      // if it fails to initialize, return an error
       if (!db) {
         return res
           .status(500)
           .json({ error: "Failed to initialize Firestore DB" });
       }
     }
-    // get the token data from Firestore
-    const result = await UserService.getUserSpotifyTokenData(userId);
+
+    const result = await UserService.getSpotifyTokenData(userId); // get the token data from Firestore
 
     if (result.error) {
       if (result.requiresAuth) {
-        // if the error is because user has no token, redirect to Spotify auth
+        // if the error is because user has no token, redirect to Spotify auth?
+        // No, user shouldn't get this far without an access token, show error
         return res.redirect(spotifyApi.createAuthorizeURL(scopes));
       }
       return res.status(401).json({ error: result.message });
@@ -56,21 +50,18 @@ const spotifyAuthMiddleware = async (req, res, next) => {
 
     const tokenData = result.data;
 
-    // if token is expired, refresh it
-    if (expireTesting) {
-      // if (isTokenExpired(tokenData)) {
+    // set token data on each request to ensure consistency
+    spotifyApi.setAccessToken(tokenData.access_token);
+    spotifyApi.setRefreshToken(tokenData.refresh_token);
+
+    // if token is or nearly expired, refresh it
+    if (isTokenExpired(tokenData)) {
       console.log("Token expired, refreshing...");
-      // refreshes token and set to instance
-      await SpotifyService.refreshAccessToken();
-      console.log("Token refreshed and saved to Firestore");
+
+      await SpotifyService.refreshAccessToken(); // refresh the token
     }
 
-    // sets the data to spotifyApi instance
-    spotifyApi.setAccessToken(tokenData.access_token);
-    console.log(
-      `Completed spotify middleware!`
-      // `Completed spotify middleware!, access_token: ${spotifyApi.getAccessToken()}`
-    );
+    console.log(`Completed spotify middleware!`);
 
     next();
   } catch (error) {

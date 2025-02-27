@@ -17,7 +17,7 @@ router.get("/login", (req, res) => {
 // Spotify redirects user back to this endpoint after auth, with access token
 router.get("/callback", async (req, res) => {
   // Check if user is logged in
-  let userId = "90"; // Hardcoded for testing, will be dynamic later
+  let userId = "80"; // Hardcoded for testing, will be dynamic later
 
   // let userId = req.session.userId;
   // if (!userId) {
@@ -62,8 +62,8 @@ router.get("/artist-top-tracks", spotifyAuthMiddleware, async (req, res) => {
       res.json(mappedData);
     })
     .catch((err) => {
-      console.error("Error fetching audio features:", err);
-      res.status(500).send(`Error fetching audio features: ${err.message}`);
+      console.error("Error fetching artist top tracks:", err);
+      res.status(500).send(`Error fetching artist top tracks: ${err.message}`);
     });
 });
 
