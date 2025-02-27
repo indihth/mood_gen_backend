@@ -23,7 +23,21 @@ class UserService {
     });
 
     // Additional business logic after saving
-    // await this.updateUserLastActivity(userId);
+    await this.updateUserLastActivity(userId);
+  }
+
+  static async updateSpotifyToken(userId, accessTokenData) {
+    const tokenData = await {
+      ...accessTokenData, // accessToken, refreshToken, expiresIn
+      lastUpdated: new Date(),
+    };
+    // Use FirebaseService for the actual database operation
+    await FirebaseService.setDocument("users", userId, {
+      spotify: tokenData,
+    });
+
+    // Additional business logic after saving
+    await this.updateUserLastActivity(userId);
   }
 
   //   static async getUserProfile(userId) {
@@ -46,14 +60,9 @@ class UserService {
   //   }
 
   static async updateUserLastActivity(userId) {
-    await FirebaseService.setDocument(
-      "users",
-      userId,
-      {
-        lastActivity: new Date(),
-      },
-      { merge: true }
-    );
+    await FirebaseService.updateDocument("users", userId, {
+      lastActivity: new Date(),
+    });
   }
 }
 

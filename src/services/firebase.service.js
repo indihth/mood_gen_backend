@@ -7,6 +7,10 @@ class FirebaseService {
     return admin.firestore().collection(collection).doc(docId).set(data);
   }
 
+  static async updateDocument(collection, docId, data) {
+    return admin.firestore().collection(collection).doc(docId).update(data);
+  }
+
   static async getDocument(collection, docId) {
     const doc = await admin.firestore().collection(collection).doc(docId).get();
     return doc.exists ? doc.data() : null;

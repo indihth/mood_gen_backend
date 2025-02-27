@@ -75,15 +75,7 @@ const getFirestoreDb = () => {
 // };
 
 const uploadData = async (data) => {
-  //   const data = {
-  //     name: "Los Angeles",
-  //     state: "CA",
-  //     country: "USA",
-  //   };
   try {
-    // const document = doc(firestoreDb, "users", "testUser");
-    // let dataUpdated = await setDoc(document, data);
-
     // let userId = ;
     const res = await firestoreDb.collection("users").add(data); // let Firestore create a unique ID
     // const res = await firestoreDb.collection("users").doc(userId).set(data); // set a specific ID
