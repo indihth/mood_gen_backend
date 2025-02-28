@@ -40,10 +40,14 @@ router.get("/callback", async (req, res) => {
     console.log(`accessTokenData: ${accessTokenData}`);
     await UserService.saveSpotifyToken(userId, accessTokenData);
 
-    res.send("Success!");
+    // res.send("Success!");
+    res.redirect(`spotifyauth://callback?success=true`); // redirects to mobile app with success
   } catch (error) {
     console.error("Error getting Tokens:", error);
-    res.send(`Error getting Tokens: ${error}`);
+    // res.send(`Error getting Tokens: ${error}`);
+    res.redirect(
+      `spotifyauth://callback?error=${encodeURIComponent(error.toString())}`
+    ); // redirects to mobile app with error message
   }
 });
 
