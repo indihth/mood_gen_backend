@@ -23,7 +23,7 @@ class SpotifyService {
   }
 
   static async refreshAccessToken() {
-    const userId = "80"; // Hardcoded for now, will be dynamic later
+    const userId = req.session.uid; // Hardcoded for now, will be dynamic later
     try {
       if (!spotifyApi.getRefreshToken()) {
         const tokenData = await UserService.getSpotifyTokenData(userId);

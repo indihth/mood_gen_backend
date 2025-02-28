@@ -19,7 +19,7 @@ const isTokenExpired = (tokenData) => {
 const spotifyAuthMiddleware = async (req, res, next) => {
   // const userId = req.session.userId;
 
-  const userId = "80"; // temp hardcoded for testing - update with firestore auth id later
+  const userId = req.session.uid; // temp hardcoded for testing - update with firestore auth id later
 
   try {
     const db = getFirestoreDb(); // Ensures Firebase is initialized first

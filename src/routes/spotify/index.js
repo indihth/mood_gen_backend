@@ -3,21 +3,22 @@ const express = require("express");
 const router = express.Router();
 const { verifyFirebaseToken } = require("../../middleware/auth.middleware");
 const spotifyAuthMiddleware = require("../../middleware/spotifyAuth.middleware");
+const sessionMiddleware = require("../../middleware/session.middleware");
 const SpotifyService = require("../../services/spotify.service");
 const UserService = require("../../services/user.service");
 const { spotifyApi, scopes } = require("../../config/spotify.config");
 
 // initial point for users to authenticate
-router.get("/login", (req, res) => {
-  // router.get("/login", verifyFirebaseToken, (req, res) => {
+router.get("/login", verifyFirebaseToken, (req, res) => {
   // req.session.userId = req.user.uid; // Set the user ID in the session
+
   res.redirect(spotifyApi.createAuthorizeURL(scopes));
 });
 
 // Spotify redirects user back to this endpoint after auth, with access token
 router.get("/callback", async (req, res) => {
   // Check if user is logged in
-  let userId = "80"; // Hardcoded for testing, will be dynamic later
+  let userId = req.session.uid; // Hardcoded for testing, will be dynamic later
 
   // let userId = req.session.userId;
   // if (!userId) {
