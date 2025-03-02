@@ -7,6 +7,7 @@ const sessionMiddleware = require("../../middleware/session.middleware");
 const SpotifyService = require("../../services/spotify.service");
 const UserService = require("../../services/user.service");
 const { spotifyApi, scopes } = require("../../config/spotify.config");
+const SpotifyController = require("../../controllers/spotify.controller");
 
 // initial point for users to authenticate
 router.get("/login", verifyFirebaseToken, (req, res) => {
@@ -73,45 +74,30 @@ router.get("/artist-top-tracks", spotifyAuthMiddleware, async (req, res) => {
 });
 
 // Example route to get user's playlists
-router.get("/playlists", spotifyAuthMiddleware, (req, res) => {
-  spotifyApi
-    .getUserPlaylists()
-    .then((data) => {
-      res.json(data.body);
-    })
-    .catch((err) => {
-      console.error("Error fetching playlists:", err);
-      res.status(500).send(`Error fetching playlists: ${err.message}`);
-    });
-});
-
-// Example route to get user's playlists
-router.get("/top", spotifyAuthMiddleware, (req, res) => {
-  spotifyApi
-    // Get the current user's top artists or tracks based on calculated affinity (ref: Spotify).
-    .getMyTopTracks({ time_range: "short_term", limit: 50 })
-    .then((data) => {
-      // map the data to only return the track name and artist
-      const mappedData = data.body.items.map((track) => {
-        return {
-          name: track.name,
-          artist: track.artists[0].name,
-          // album: track.album.name,
-          // id: track.id,
-        };
+router.get(
+  "/playlists",
+  verifyFirebaseToken,
+  spotifyAuthMiddleware,
+  (req, res) => {
+    spotifyApi
+      .getUserPlaylists()
+      .then((data) => {
+        res.json(data.body);
+      })
+      .catch((err) => {
+        console.error("Error fetching playlists:", err);
+        res.status(500).send(`Error fetching playlists: ${err.message}`);
       });
+  }
+);
 
-      // Send both the mapped items and total count in the response
-      res.json({
-        items: mappedData,
-        total: data.body.total,
-      });
-    })
-    .catch((err) => {
-      console.error("Error fetching top tracks:", err);
-      res.status(500).send(`Error fetching top tracks: ${err.message}`);
-    });
-});
+// Refactored route to use controller
+router.get(
+  "/top",
+  verifyFirebaseToken,
+  spotifyAuthMiddleware,
+  SpotifyController.getTopTracks
+);
 
 // TODO: Add a route to refresh the access token and update Firestore
 
