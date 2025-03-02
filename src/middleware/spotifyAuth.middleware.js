@@ -3,8 +3,6 @@ const { spotifyApi, scopes } = require("../config/spotify.config");
 const SpotifyService = require("../services/spotify.service");
 const UserService = require("../services/user.service");
 
-const expireTesting = false;
-
 const isTokenExpired = (tokenData) => {
   if (!tokenData?.created_at || !tokenData?.expires_in) {
     return true;
@@ -19,7 +17,15 @@ const isTokenExpired = (tokenData) => {
 const spotifyAuthMiddleware = async (req, res, next) => {
   // const userId = req.session.userId;
 
-  const userId = req.session.uid; // temp hardcoded for testing - update with firestore auth id later
+  // if (process.env.TESTING_MODE === "true") {
+  //   console.log(
+  //     "Testing mode enabled, skipping Firebase auth and setting test uid"
+  //   );
+  //   // setting a test user id from env
+  //   req.session.uid = process.env.TEST_USER_ID;
+  //   return next();
+  // }
+  const userId = req.session.uid;
 
   try {
     const db = getFirestoreDb(); // Ensures Firebase is initialized first
@@ -58,7 +64,7 @@ const spotifyAuthMiddleware = async (req, res, next) => {
     if (isTokenExpired(tokenData)) {
       console.log("Token expired, refreshing...");
 
-      await SpotifyService.refreshAccessToken(); // refresh the token
+      await SpotifyService.refreshAccessToken(req); // refresh the token
     }
 
     console.log(`Completed spotify middleware!`);
