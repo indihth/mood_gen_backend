@@ -61,21 +61,23 @@ class SpotifyService {
 
   static async getRecentHistory() {
     try {
-      const data = await spotifyApi.getMyRecentlyPlayedTracks({
+      // const data = await spotifyApi.getMyRecentlyPlayedTracks({
+      const data = await spotifyApi.getMyTopTracks({
         limit: 20,
       });
 
       const mappedData = data.body.items.map((track) => {
         return {
-          id: track.track.id,
-          artistName: track.track.artists[0].name,
-          songName: track.track.name,
-          albumName: track.track.album.name,
-          albumArtworkUrl: track.track.album.images[0].url,
+          id: track.id,
+          artistName: track.artists[0].name,
+          songName: track.name,
+          albumName: track.album.name,
+          albumArtworkUrl: track.album.images[0].url,
         };
       });
 
-      res.json([...mappedData]);
+      return mappedData;
+      // res.json([...mappedData]);
     } catch (err) {
       console.error("Error fetching recent history:", err);
       res.status(500).send(`Error fetching recent history: ${err.message}`);

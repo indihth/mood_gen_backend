@@ -12,8 +12,14 @@ const verifyFirebaseToken = async (req, res, next) => {
   }
 
   try {
-    const authHeader = req.headers.authorization;
-    const firebaseToken = authHeader?.split("Bearer ")[1];
+    let firebaseToken;
+    if (req.headers.authorization) {
+      firebaseToken = req.headers.authorization.split("Bearer ")[1];
+    } else if (req.query.token) {
+      firebaseToken = req.query.token;
+    }
+    // const authHeader = req.headers.authorization;
+    // const firebaseToken = authHeader?.split("Bearer ")[1];
 
     // if (!req.query.token) {
     //   const authHeader = req.headers.authorization;
@@ -31,7 +37,6 @@ const verifyFirebaseToken = async (req, res, next) => {
     if (req.session) {
       // store UID in session
       req.session.uid = decodedToken.uid;
-      console.log(`Session UID: ${req.session.uid}`);
     }
 
     next();

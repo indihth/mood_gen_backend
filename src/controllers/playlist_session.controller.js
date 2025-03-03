@@ -1,3 +1,6 @@
+const FirebaseService = require("../services/firebase.service");
+const SpotifyService = require("../services/spotify.service");
+
 class PlaylistSessionController {
   static async getUserData(req, res) {
     try {
@@ -10,10 +13,68 @@ class PlaylistSessionController {
     }
   }
 
+  static async createSession(req, res) {
+    try {
+      const listeningHistory = await SpotifyService.getRecentHistory();
+
+      const sessionData = {
+        users: {
+          [req.session.uid]: {
+            listeningHistory: [...listeningHistory],
+            isAdmin: true,
+            joinedAt: new Date(),
+          },
+        },
+      };
+
+      // Get playlist sessions data from Firestore
+      const session = await FirebaseService.setDocument(
+        "sessions",
+        "",
+        sessionData
+      );
+
+      res.json({ data: session, message: "New playlist session created" });
+    } catch (error) {
+      res.status(500).json({ error: error.message });
+    }
+  }
+
+  // add user to session
+  static async joinSession(req, res, sessionId) {
+    try {
+      const listeningHistory = await SpotifyService.getRecentHistory();
+
+      const sessionData = {
+        users: {
+          [req.session.uid]: {
+            listeningHistory: [...listeningHistory],
+            isAdmin: false,
+            joinedAt: new Date(),
+          },
+        },
+      };
+
+      // Get playlist sessions data from Firestore
+      const session = await FirebaseService.updateDocument(
+        "sessions",
+        sessionId,
+        sessionData
+      );
+
+      res.json({ data: session, message: "Get playlist sessions" });
+    } catch (error) {
+      res.status(500).json({ error: error.message });
+    }
+  }
+
   static async getSessions(req, res) {
     try {
-      // Add your session fetching logic here
-      res.json({ message: "Get playlist sessions" });
+      // Get playlist sessions data from Firestore
+      const sessionData = await FirebaseService.getCollection("sessions");
+
+      console.log("sessionData", sessionData);
+      res.json({ data: sessionData, message: "Get playlist sessions" });
     } catch (error) {
       res.status(500).json({ error: error.message });
     }
@@ -21,7 +82,8 @@ class PlaylistSessionController {
 
   static async getRecentHistory(req, res) {
     try {
-      const data = await spotifyApi.getMyRecentlyPlayedTracks({
+      // const data = await spotifyApi.getMyRecentlyPlayedTracks({
+      const data = await spotifyApi.getMyTopTracks({
         limit: 20,
       });
 

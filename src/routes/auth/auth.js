@@ -40,7 +40,6 @@ router.get("/callback", (req, res) => {
       };
       uploadData(dataUpload);
 
-      console.log(`access_token: ${access_token}`);
       res.send("Success!");
     })
     .catch((error) => {

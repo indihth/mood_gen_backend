@@ -15,10 +15,24 @@ router.get(
 );
 
 router.get(
-  "/sessions",
+  "/get-sessions",
   verifyFirebaseToken,
   spotifyAuthMiddleware,
   PlaylistSessionController.getSessions
+);
+
+router.post(
+  "/create-session",
+  verifyFirebaseToken,
+  spotifyAuthMiddleware,
+  PlaylistSessionController.createSession
+);
+
+router.put(
+  "/join-session",
+  verifyFirebaseToken,
+  spotifyAuthMiddleware,
+  PlaylistSessionController.joinSession
 );
 
 // ...existing code...

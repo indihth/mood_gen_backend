@@ -7,11 +7,10 @@ const isTokenExpired = (tokenData) => {
     return true;
   }
   const now = Date.now();
-  const expiryTime = tokenData.created_at + tokenData.expires_in * 1000;
+  const expiryTime = tokenData.created_at + tokenData.expires_in * 1000; // convert to ms
 
   // if token is or is about to expire (buffer of 5 minutes), return true
-  return true;
-  // return now >= expiryTime - 300000;
+  return now >= expiryTime - 300000; // 5 minutes in ms
 };
 
 const spotifyAuthMiddleware = async (req, res, next) => {
@@ -54,17 +53,17 @@ const spotifyAuthMiddleware = async (req, res, next) => {
       return res.status(401).json({ error: result.message });
     }
 
-    const tokenData = result.data;
+    const tokenData = result;
+    // console.log("Spotify Token Data:", tokenData);
 
     // set token data on each request to ensure consistency
-    spotifyApi.setAccessToken(tokenData.access_token);
-    spotifyApi.setRefreshToken(tokenData.refresh_token);
+    spotifyApi.setAccessToken(tokenData.spotify.access_token);
+    spotifyApi.setRefreshToken(tokenData.spotify.refresh_token);
 
     // if token is or nearly expired, refresh it
-    if (isTokenExpired(tokenData)) {
-      console.log("Token expired, refreshing...");
-
+    if (isTokenExpired(tokenData.spotify)) {
       await TokenService.refreshSpotifyToken(userId);
+      console.log("Token expired, refreshing...");
     }
 
     console.log(`Completed spotify middleware!`);
