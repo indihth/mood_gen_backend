@@ -1,7 +1,6 @@
 const { getFirestoreDb } = require("../services/firebaseServices");
 const { spotifyApi, scopes } = require("../config/spotify.config");
-const SpotifyService = require("../services/spotify.service");
-const UserService = require("../services/user.service");
+const TokenService = require("../services/token.service");
 
 const isTokenExpired = (tokenData) => {
   if (!tokenData?.created_at || !tokenData?.expires_in) {
@@ -11,7 +10,8 @@ const isTokenExpired = (tokenData) => {
   const expiryTime = tokenData.created_at + tokenData.expires_in * 1000;
 
   // if token is or is about to expire (buffer of 5 minutes), return true
-  return now >= expiryTime - 300000;
+  return true;
+  // return now >= expiryTime - 300000;
 };
 
 const spotifyAuthMiddleware = async (req, res, next) => {
@@ -43,7 +43,7 @@ const spotifyAuthMiddleware = async (req, res, next) => {
       }
     }
 
-    const result = await UserService.getSpotifyTokenData(userId); // get the token data from Firestore
+    const result = await TokenService.getSpotifyTokenData(userId); // get the token data from Firestore
 
     if (result.error) {
       if (result.requiresAuth) {
@@ -64,7 +64,7 @@ const spotifyAuthMiddleware = async (req, res, next) => {
     if (isTokenExpired(tokenData)) {
       console.log("Token expired, refreshing...");
 
-      await SpotifyService.refreshAccessToken(req); // refresh the token
+      await TokenService.refreshSpotifyToken(userId);
     }
 
     console.log(`Completed spotify middleware!`);

@@ -1,13 +1,14 @@
 // src/routes/spotify/index.js
 const express = require("express");
 const router = express.Router();
-const { verifyFirebaseToken } = require("../../middleware/auth.middleware");
+const verifyFirebaseToken = require("../../middleware/auth.middleware");
 const spotifyAuthMiddleware = require("../../middleware/spotifyAuth.middleware");
 const sessionMiddleware = require("../../middleware/session.middleware");
 const SpotifyService = require("../../services/spotify.service");
 const UserService = require("../../services/user.service");
 const { spotifyApi, scopes } = require("../../config/spotify.config");
 const SpotifyController = require("../../controllers/spotify.controller");
+const TokenService = require("../../services/token.service");
 
 // initial point for users to authenticate
 router.get("/login", verifyFirebaseToken, (req, res) => {
@@ -37,10 +38,10 @@ router.get("/callback", async (req, res) => {
   }
 
   try {
-    const accessTokenData = await SpotifyService.getAccessToken(req.query.code);
+    const accessTokenData = await TokenService.getAccessToken(req.query.code);
     // console log accessTokenData to see what it looks like
     console.log(`accessTokenData: ${accessTokenData}`);
-    await UserService.saveSpotifyToken(userId, accessTokenData);
+    // await UserService.saveSpotifyToken(userId, accessTokenData);
 
     // res.send("Success!");
     res.redirect(`spotifyauth://callback?success=true`); // redirects to mobile app with success

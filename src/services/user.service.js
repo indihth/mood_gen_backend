@@ -1,10 +1,12 @@
 // src/services/user.service.js
 const FirebaseService = require("./firebase.service");
+// CIRCULAR DEPENDENCY WARNING: Importing SpotifyService while it imports UserService
 const SpotifyService = require("./spotify.service");
 
 class UserService {
   // High-level business operations
   static async saveSpotifyToken(userId, accessTokenData) {
+    const userEmail = await FirebaseService.getUserEmail(userId);
     const tokenData = await {
       ...accessTokenData, // accessToken, refreshToken, expiresIn
       created_at: new Date(),
@@ -20,13 +22,18 @@ class UserService {
     // Use FirebaseService for the actual database operation
     await FirebaseService.setDocument("users", userId, {
       spotify: tokenData,
+      spotifyConnected: true,
+      email: userEmail,
     });
   }
 
-  static async updateSpotifyToken(userId, accessTokenData) {
-    const tokenData = await {
-      ...accessTokenData, // accessToken, expiresIn
-    };
+  static async updateSpotifyToken(req) {
+    // CIRCULAR DEPENDENCY: This calls back to SpotifyService
+    const tokenData = await SpotifyService.refreshAccessToken(req);
+    // const tokenData = await {
+    //   ...accessTokenData, // accessToken, expiresIn
+    // };
+
     // Use FirebaseService for the actual database operation
     await FirebaseService.updateDocument("users", userId, {
       ...tokenData,

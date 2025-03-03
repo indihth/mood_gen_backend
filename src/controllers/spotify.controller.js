@@ -1,4 +1,5 @@
 const { spotifyApi } = require("../config/spotify.config");
+const FirebaseService = require("../services/firebase.service");
 
 /**
  * Get the user's top tracks from Spotify

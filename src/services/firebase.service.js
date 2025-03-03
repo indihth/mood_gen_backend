@@ -19,6 +19,16 @@ class FirebaseService {
   static async verifyToken(token) {
     return admin.auth().verifyIdToken(token);
   }
+
+  static async getUserEmail(userId) {
+    try {
+      const user = await admin.auth().getUser(userId);
+      return user.email;
+    } catch (error) {
+      console.error("Error getting user email:", error);
+      return null; // or throw the error, depending on your error handling strategy
+    }
+  }
 }
 
 module.exports = FirebaseService;

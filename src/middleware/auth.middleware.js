@@ -2,7 +2,6 @@
 const admin = require("firebase-admin");
 
 const verifyFirebaseToken = async (req, res, next) => {
-  console.log(`TESTING_MODE value: ${process.env.TESTING_MODE}`);
   if (process.env.TESTING_MODE === "true") {
     console.log(
       "Testing mode enabled, skipping Firebase auth and setting test uid"
@@ -13,10 +12,15 @@ const verifyFirebaseToken = async (req, res, next) => {
   }
 
   try {
-    // const authHeader = req.headers.authorization;
-    // const firebaseToken = authHeader?.split("Bearer ")[1];
+    const authHeader = req.headers.authorization;
+    const firebaseToken = authHeader?.split("Bearer ")[1];
 
-    const firebaseToken = req.query.token; // Get token from query string
+    // if (!req.query.token) {
+    //   const authHeader = req.headers.authorization;
+    //   const firebaseToken = authHeader?.split("Bearer ")[1];
+    // }
+
+    // const firebaseToken = req.query.token; // Get token from query string
 
     if (!firebaseToken) {
       return res.status(401).json({ error: "No token provided" });
@@ -36,4 +40,9 @@ const verifyFirebaseToken = async (req, res, next) => {
   }
 };
 
-module.exports = { verifyFirebaseToken };
+// Option 1: Export the function directly as the default export
+module.exports = verifyFirebaseToken;
+
+// Option 2: Keep both approaches for backward compatibility
+// module.exports = verifyFirebaseToken;
+// module.exports.verifyFirebaseToken = verifyFirebaseToken;

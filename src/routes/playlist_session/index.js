@@ -1,0 +1,26 @@
+// src/routes/spotify/index.js
+const express = require("express");
+const router = express.Router();
+const verifyFirebaseToken = require("../../middleware/auth.middleware");
+const spotifyAuthMiddleware = require("../../middleware/spotifyAuth.middleware");
+const PlaylistSessionController = require("../../controllers/playlist_session.controller");
+
+// ...existing code...
+
+router.get(
+  "/user-data",
+  verifyFirebaseToken,
+  spotifyAuthMiddleware,
+  PlaylistSessionController.getUserData
+);
+
+router.get(
+  "/sessions",
+  verifyFirebaseToken,
+  spotifyAuthMiddleware,
+  PlaylistSessionController.getSessions
+);
+
+// ...existing code...
+
+module.exports = router;

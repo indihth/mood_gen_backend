@@ -1,4 +1,5 @@
 const { spotifyApi } = require("../config/spotify.config");
+// CIRCULAR DEPENDENCY WARNING: Importing UserService while it imports SpotifyService
 const UserService = require("./user.service");
 
 class SpotifyService {
@@ -26,6 +27,7 @@ class SpotifyService {
     const userId = req.session.uid; // Hardcoded for now, will be dynamic later
     try {
       if (!spotifyApi.getRefreshToken()) {
+        // CIRCULAR DEPENDENCY: This calls back to UserService
         const tokenData = await UserService.getSpotifyTokenData(userId);
         const refreshToken = tokenData.data.refresh_token;
         spotifyApi.setRefreshToken(refreshToken);
@@ -48,12 +50,35 @@ class SpotifyService {
       console.log("spotifyApi.getAccessToken: ", spotifyApi.getAccessToken());
 
       // Save new access token to db - move to middleware?
-      await UserService.updateSpotifyToken(userId, tokenData);
+      // await UserService.updateSpotifyToken(userId, tokenData);
 
-      return;
+      return tokenData;
     } catch (error) {
       console.error("Error refreshing access token:", error);
       throw new Error("Failed to refresh access token");
+    }
+  }
+
+  static async getRecentHistory() {
+    try {
+      const data = await spotifyApi.getMyRecentlyPlayedTracks({
+        limit: 20,
+      });
+
+      const mappedData = data.body.items.map((track) => {
+        return {
+          id: track.track.id,
+          artistName: track.track.artists[0].name,
+          songName: track.track.name,
+          albumName: track.track.album.name,
+          albumArtworkUrl: track.track.album.images[0].url,
+        };
+      });
+
+      res.json([...mappedData]);
+    } catch (err) {
+      console.error("Error fetching recent history:", err);
+      res.status(500).send(`Error fetching recent history: ${err.message}`);
     }
   }
 }
