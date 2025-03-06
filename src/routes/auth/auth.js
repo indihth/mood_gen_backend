@@ -1,16 +1,11 @@
 const express = require("express");
 const router = express.Router();
 require("dotenv").config();
-const spotifyApi = require("../config/spotifyClient");
+const { uploadData } = require("../../services/firebaseServices");
+const { spotifyApi, scopes } = require("../../config/spotify.config");
 
 // initial point for users to authenticate
 router.get("/login", (req, res) => {
-  const scopes = [
-    "playlist-modify-public", // Allow creating public playlists
-    "playlist-modify-private", // Allow creating private playlists
-    "user-read-private", // Read user profile
-    "user-read-email", // Read user email
-  ];
   res.redirect(spotifyApi.createAuthorizeURL(scopes));
 });
 
@@ -37,7 +32,14 @@ router.get("/callback", (req, res) => {
       spotifyApi.setAccessToken(access_token);
       spotifyApi.setRefreshToken(refresh_token);
 
-      console.log(`access_token: ${access_token}`);
+      // upload the tokens to Firestore
+      const dataUpload = {
+        access_token: access_token,
+        refresh_token: refresh_token,
+        expires_in: expires_in,
+      };
+      uploadData(dataUpload);
+
       res.send("Success!");
     })
     .catch((error) => {
@@ -45,5 +47,7 @@ router.get("/callback", (req, res) => {
       res.send(`Error getting Tokens: ${error}`);
     });
 });
+
+// TODO: Add a route to refresh the access token and update Firestore
 
 module.exports = router;
