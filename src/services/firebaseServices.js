@@ -78,7 +78,7 @@ const getSpotifyToken = async (userId) => {
     console.log("No such document!");
     return null;
   }
-  console.log("Document data:", doc.data());
+  // console.log("Document data:", doc.data());
   return doc.data();
 };
 

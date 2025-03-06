@@ -12,7 +12,6 @@ class UserService {
       created_at: new Date(),
       last_updated: new Date(),
     };
-    // console.log("accessTokenData UserService: ", accessTokenData);
 
     // Validate token format
     // if (!this.isValidSpotifyToken(tokenData)) {

@@ -35,6 +35,4 @@ router.put(
   PlaylistSessionController.joinSession
 );
 
-// ...existing code...
-
 module.exports = router;

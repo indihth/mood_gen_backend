@@ -41,7 +41,9 @@ class PlaylistSessionController {
   }
 
   // add user to session
-  static async joinSession(req, res, sessionId) {
+  static async joinSession(req, res) {
+    const sessionId = "M4Lh2v3rwexpoWBVU5Bd"; // hardcoded for now
+
     try {
       const listeningHistory = await SpotifyService.getRecentHistory();
 

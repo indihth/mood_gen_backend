@@ -92,6 +92,22 @@ router.get(
   }
 );
 
+// Create playlist
+router.post(
+  "/playlist",
+  verifyFirebaseToken,
+  spotifyAuthMiddleware,
+  SpotifyController.createPlaylist
+);
+
+// Get a playlist
+router.get(
+  "/playlist",
+  verifyFirebaseToken,
+  spotifyAuthMiddleware,
+  SpotifyController.getPlaylist
+);
+
 // Refactored route to use controller
 router.get(
   "/top",

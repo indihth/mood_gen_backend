@@ -79,8 +79,58 @@ class SpotifyService {
       return mappedData;
       // res.json([...mappedData]);
     } catch (err) {
-      console.error("Error fetching recent history:", err);
+      console.error("Error fetching recent history:", err.message);
       res.status(500).send(`Error fetching recent history: ${err.message}`);
+    }
+  }
+
+  static async getPlaylist(playlistId) {
+    try {
+      const playlist = await spotifyApi.getPlaylist(playlistId);
+
+      const mappedData = {
+        id: playlist.body.id,
+        name: playlist.body.name,
+        description: playlist.body.description,
+        external_urls: playlist.body.external_urls,
+        images: playlist.body.images,
+        owner: {
+          id: playlist.body.owner.id,
+          display_name: playlist.body.owner.display_name,
+        },
+        tracks: {
+          total: playlist.body.tracks.total,
+          items: playlist.body.tracks.items,
+        },
+      };
+
+      return mappedData;
+    } catch (error) {
+      console.error("Error getting playlist:", error);
+      throw new Error("Failed to get playlist");
+    }
+  }
+
+  static async createPlaylist(name, description, isPublic = true) {
+    try {
+      const playlist = await spotifyApi.createPlaylist(name, {
+        description,
+        public: isPublic,
+      });
+      return playlist.body;
+    } catch (error) {
+      console.error("Error creating playlist:", error);
+      throw new Error("Failed to create playlist");
+    }
+  }
+
+  static async addTracksToPlaylist(playlistId, tracks) {
+    try {
+      const result = await spotifyApi.addTracksToPlaylist(playlistId, tracks);
+      return result.body;
+    } catch (error) {
+      console.error("Error adding tracks to playlist:", error);
+      throw new Error("Failed to add tracks to playlist");
     }
   }
 }
