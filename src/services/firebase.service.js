@@ -21,6 +21,37 @@ class FirebaseService {
     return admin.firestore().collection(collection).doc(docId).update(data);
   }
 
+  static async addToDocument(collection, docId, data, field) {
+    try {
+      // run transaction - ensure read and write operations happen atomically
+      //  prevents conflicts if multiple users try update at once
+      const docRef = admin.firestore().collection(collection).doc(docId);
+      admin.firestore().runTransaction(async (transaction) => {
+        // first gets the document to update
+        const docSnap = await transaction.get(docRef);
+
+        if (!docSnap.exists) {
+          throw new Error("Document does not exist");
+        }
+
+        // gets the existing data
+        const docData = docSnap.data()?.[field] || {};
+
+        // updates the data
+        const updatedData = { ...docData, ...data };
+
+        // sets the updated data
+        transaction.update(docRef, { [field]: updatedData });
+
+        console.log("Document successfully updated");
+        return updatedData;
+      });
+    } catch (error) {
+      console.error("Error updating document:", error);
+      return null;
+    }
+  }
+
   static async getDocument(collection, docId) {
     const doc = await admin.firestore().collection(collection).doc(docId).get();
     return doc.exists ? doc.data() : null;

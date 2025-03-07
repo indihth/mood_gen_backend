@@ -62,9 +62,9 @@ class SpotifyService {
   static async getRecentHistory() {
     try {
       // const data = await spotifyApi.getMyRecentlyPlayedTracks({
-      const data = await spotifyApi.getMyTopTracks({
-        limit: 20,
-      });
+      const data = await spotifyApi.getMyTopTracks();
+
+      console.log("data.body", data.body);
 
       const mappedData = data.body.items.map((track) => {
         return {
@@ -80,10 +80,11 @@ class SpotifyService {
       // res.json([...mappedData]);
     } catch (err) {
       console.error("Error fetching recent history:", err.message);
-      res.status(500).send(`Error fetching recent history: ${err.message}`);
+      // throw new Error("Failed to fetch recent history");
     }
   }
 
+  // throwing error: Route.get() requires a callback function but got a [object Undefined]
   static async getPlaylist(playlistId) {
     try {
       const playlist = await spotifyApi.getPlaylist(playlistId);
@@ -103,7 +104,6 @@ class SpotifyService {
           items: playlist.body.tracks.items,
         },
       };
-
       return mappedData;
     } catch (error) {
       console.error("Error getting playlist:", error);

@@ -1,4 +1,3 @@
-// src/routes/spotify/index.js
 const express = require("express");
 const router = express.Router();
 const verifyFirebaseToken = require("../../middleware/auth.middleware");

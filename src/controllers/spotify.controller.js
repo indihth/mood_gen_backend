@@ -33,43 +33,53 @@ const getTopTracks = async (req, res) => {
 };
 
 const createPlaylist = async (req, res) => {
-  // Example tracks to add to playlist - dynamic data can be passed in
-  const tracks = [
-    "spotify:track:51eSHglvG1RJXtL3qI5trr",
-    "spotify:track:4ZuIZH78dteLeq4KAApART",
-    "spotify:track:3xkHsmpQCBMytMJNiDf3Ii",
-  ];
-
   try {
-    // create new empty playlist
-    const playlist = await SpotifyService.createPlaylist(
-      "Alexandra's playlist",
-      "Schuff"
+    const tracks = [
+      "spotify:track:51eSHglvG1RJXtL3qI5trr",
+      "spotify:track:4ZuIZH78dteLeq4KAApART",
+      "spotify:track:3xkHsmpQCBMytMJNiDf3Ii",
+    ];
+
+    // collabroative playlist?
+    // create empty playlist, returns snapshot id for playlist (needs userId)
+    const playlist = await spotifyApi.createPlaylist("My playlist", {
+      description: "My description",
+      public: true,
+    });
+    const playlistId = playlist.body.id;
+    console.log("Created playlist with id:", playlist);
+
+    // add tracks to playlist, returns snapshot id for playlist
+    const addedTracks = await spotifyApi.addTracksToPlaylist(
+      playlistId,
+      tracks
     );
+    console.log("Added tracks to playlist:", addedTracks);
 
-    // add tracks to playlist
-    await SpotifyService.addTracksToPlaylist(playlist.id, tracks);
-
-    // get the playlist data
-    const playlistData = await SpotifyService.getPlaylist(playlist.id);
-    console.log("Playlist data:", playlistData);
-
-    res.json({ data: playlistData });
+    // res.json({ playlistId, addedTracks });
   } catch (error) {
     console.error("Error creating playlist:", error);
     res.status(500).send(`Error creating playlist: ${error.message}`);
   }
 };
 
-// get playlist by query id
 const getPlaylist = async (req, res) => {
   try {
-    const playlistId = req.query.id;
-    const playlistData = await SpotifyService.getPlaylist(playlistId);
-    res.json({ data: playlistData });
+    const { id } = req.query;
+
+    if (!id) {
+      return res.status(400).json({ error: "Playlist ID is required" });
+    }
+    const data = await SpotifyService.getPlaylist(id);
+
+    if (!data) {
+      return res.status(404).json({ error: "Playlist not found" });
+    }
+
+    res.json(data.body);
   } catch (error) {
-    console.error("Error getting playlist:", error);
-    res.status(500).send(`Error getting playlist: ${error.message}`);
+    console.error("Error fetching playlist:", error);
+    res.status(500).json({ error: error.message });
   }
 };
 

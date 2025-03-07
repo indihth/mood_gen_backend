@@ -13,29 +13,11 @@ const isTokenExpired = (tokenData) => {
   const now = Date.now();
   const expiryTime = lastUpdated + tokenData.expires_in * 1000;
 
-  console.log({
-    lastUpdated,
-    now,
-    expiryTime,
-    expires_in: tokenData.expires_in,
-    timeUntilExpiry: expiryTime - now,
-  });
-
   // If token expires in less than 5 minutes, refresh early to avoid bad requests
   return now >= expiryTime - 300000; // 5 minutes buffer
 };
 
 const spotifyAuthMiddleware = async (req, res, next) => {
-  // const userId = req.session.userId;
-
-  // if (process.env.TESTING_MODE === "true") {
-  //   console.log(
-  //     "Testing mode enabled, skipping Firebase auth and setting test uid"
-  //   );
-  //   // setting a test user id from env
-  //   req.session.uid = process.env.TEST_USER_ID;
-  //   return next();
-  // }
   const userId = req.session.uid;
 
   try {

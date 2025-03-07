@@ -42,30 +42,46 @@ class PlaylistSessionController {
 
   // add user to session
   static async joinSession(req, res) {
-    const sessionId = "M4Lh2v3rwexpoWBVU5Bd"; // hardcoded for now
-
     try {
-      const listeningHistory = await SpotifyService.getRecentHistory();
+      const sessionId = "M4Lh2v3rwexpoWBVU5Bd";
+      const userId = req.session.uid;
 
-      const sessionData = {
-        users: {
-          [req.session.uid]: {
-            listeningHistory: [...listeningHistory],
-            isAdmin: false,
-            joinedAt: new Date(),
-          },
+      // Get the existing session data
+      const sessionDoc = await FirebaseService.getDocument(
+        "sessions",
+        sessionId
+      );
+      if (!sessionDoc) {
+        return res.status(404).json({ error: "Session not found" });
+      }
+
+      // const listeningHistory = await SpotifyService.getRecentHistory();
+
+      // Create update object with the new user data
+      const newUserData = {
+        [`${userId}`]: {
+          // listeningHistory: listeningHistory,
+          isAdmin: false,
+          joinedAt: new Date(),
         },
       };
 
-      // Get playlist sessions data from Firestore
-      const session = await FirebaseService.updateDocument(
+      // Update the session document
+      await FirebaseService.addToDocument(
         "sessions",
         sessionId,
-        sessionData
+        newUserData,
+        "users"
       );
 
-      res.json({ data: session, message: "Get playlist sessions" });
+      res.json({
+        message: "Successfully joined session",
+        sessionId: sessionId,
+      });
+
+      return;
     } catch (error) {
+      console.error("Error joining session:", error);
       res.status(500).json({ error: error.message });
     }
   }
