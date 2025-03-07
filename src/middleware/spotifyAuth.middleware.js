@@ -37,25 +37,31 @@ const spotifyAuthMiddleware = async (req, res, next) => {
     }
 
     const result = await TokenService.getSpotifyTokenData(userId); // get the token data from Firestore
-
-    if (result.error) {
+    // console.log("Spotify Token Data:", result);
+    if (!result || result.error) {
       if (result.requiresAuth) {
         // if the error is because user has no token, redirect to Spotify auth?
         // No, user shouldn't get this far without an access token, show error
-        return res.redirect(spotifyApi.createAuthorizeURL(scopes));
+        console.log(
+          "User has no Spotify token, user needs to authorise Spotify..."
+        );
+        return res.status(401).json({
+          error: "User needs to authorise Spotify",
+          requiresAuth: true,
+        });
+        // return res.redirect(spotifyApi.createAuthorizeURL(scopes));
       }
       return res.status(401).json({ error: result.message });
     }
 
-    const tokenData = result;
-    // console.log("Spotify Token Data:", tokenData);
+    const tokenData = result.data;
 
     // set token data on each request to ensure consistency
-    spotifyApi.setAccessToken(tokenData.spotify.access_token);
-    spotifyApi.setRefreshToken(tokenData.spotify.refresh_token);
+    spotifyApi.setAccessToken(tokenData.access_token);
+    spotifyApi.setRefreshToken(tokenData.refresh_token);
 
     // if token is or nearly expired, refresh it
-    if (isTokenExpired(tokenData.spotify)) {
+    if (isTokenExpired(tokenData)) {
       console.log("Token expired, needs refreshing...");
       await TokenService.refreshSpotifyToken(userId);
     }

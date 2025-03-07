@@ -1,5 +1,6 @@
 const FirebaseService = require("../services/firebase.service");
 const SpotifyService = require("../services/spotify.service");
+const PlaylistSessionServices = require("../services/playlist_session.services");
 
 class PlaylistSessionController {
   static async getUserData(req, res) {
@@ -40,10 +41,9 @@ class PlaylistSessionController {
     }
   }
 
-  // add user to session
-  static async joinSession(req, res) {
+  static async createPlaylist(req, res) {
     try {
-      const sessionId = "M4Lh2v3rwexpoWBVU5Bd";
+      const sessionId = "JzIwwJr5UybGpWeK9aU5";
       const userId = req.session.uid;
 
       // Get the existing session data
@@ -55,12 +55,40 @@ class PlaylistSessionController {
         return res.status(404).json({ error: "Session not found" });
       }
 
-      // const listeningHistory = await SpotifyService.getRecentHistory();
+      const listeningHistory =
+        await PlaylistSessionServices.getAllListeningHistory(sessionId);
+
+      return res.json({
+        message: "Successfully get user listening history",
+        listeningHistory: listeningHistory,
+      });
+    } catch (error) {
+      console.error("Error getting user listening history from db:", error);
+      res.status(500).json({ error: error.message });
+    }
+  }
+
+  // // add user to session
+  static async joinSession(req, res) {
+    try {
+      const sessionId = "JzIwwJr5UybGpWeK9aU5";
+      const userId = req.session.uid;
+
+      // Get the existing session data
+      const sessionDoc = await FirebaseService.getDocument(
+        "sessions",
+        sessionId
+      );
+      if (!sessionDoc) {
+        return res.status(404).json({ error: "Session not found" });
+      }
+
+      const listeningHistory = await SpotifyService.getRecentHistory();
 
       // Create update object with the new user data
       const newUserData = {
         [`${userId}`]: {
-          // listeningHistory: listeningHistory,
+          listeningHistory: listeningHistory,
           isAdmin: false,
           joinedAt: new Date(),
         },
@@ -95,30 +123,6 @@ class PlaylistSessionController {
       res.json({ data: sessionData, message: "Get playlist sessions" });
     } catch (error) {
       res.status(500).json({ error: error.message });
-    }
-  }
-
-  static async getRecentHistory(req, res) {
-    try {
-      // const data = await spotifyApi.getMyRecentlyPlayedTracks({
-      const data = await spotifyApi.getMyTopTracks({
-        limit: 20,
-      });
-
-      const mappedData = data.body.items.map((track) => {
-        return {
-          id: track.track.id,
-          artistName: track.track.artists[0].name,
-          songName: track.track.name,
-          albumName: track.track.album.name,
-          albumArtworkUrl: track.track.album.images[0].url,
-        };
-      });
-
-      res.json([...mappedData]);
-    } catch (err) {
-      console.error("Error fetching recent history:", err);
-      res.status(500).send(`Error fetching recent history: ${err.message}`);
     }
   }
 }

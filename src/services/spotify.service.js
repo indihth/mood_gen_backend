@@ -59,22 +59,27 @@ class SpotifyService {
     }
   }
 
-  static async getRecentHistory() {
+  static async getRecentHistory(time_range = "long_term") {
+    // NEED TO FETCH ALL PAGINATED DATA
     try {
       // const data = await spotifyApi.getMyRecentlyPlayedTracks({
-      const data = await spotifyApi.getMyTopTracks();
-
-      console.log("data.body", data.body);
+      const data = await spotifyApi.getMyTopTracks({
+        time_range: time_range,
+      });
 
       const mappedData = data.body.items.map((track) => {
         return {
-          id: track.id,
+          trackId: track.id,
           artistName: track.artists[0].name,
           songName: track.name,
           albumName: track.album.name,
           albumArtworkUrl: track.album.images[0].url,
         };
       });
+
+      if (!mappedData) {
+        throw new Error("No recent history found");
+      }
 
       return mappedData;
       // res.json([...mappedData]);
@@ -106,7 +111,7 @@ class SpotifyService {
       };
       return mappedData;
     } catch (error) {
-      console.error("Error getting playlist:", error);
+      console.error("Error getting playlist:", error.message);
       throw new Error("Failed to get playlist");
     }
   }
@@ -119,7 +124,7 @@ class SpotifyService {
       });
       return playlist.body;
     } catch (error) {
-      console.error("Error creating playlist:", error);
+      console.error("Error creating playlist:", error.body.message);
       throw new Error("Failed to create playlist");
     }
   }

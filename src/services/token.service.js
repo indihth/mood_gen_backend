@@ -14,8 +14,12 @@ class TokenService {
    * @returns {Promise<Object>} Token data containing access_token, refresh_token, and expires_in
    * @throws {Error} When access token retrieval fails
    */
-  static async getAccessToken(code) {
+  static async getAccessToken(req) {
     try {
+      const code = req.query.code;
+      const userId = req.session.uid;
+      console.log("userId: ", userId);
+
       const data = await spotifyApi.authorizationCodeGrant(code);
       const tokenData = {
         access_token: data.body["access_token"],
@@ -30,13 +34,13 @@ class TokenService {
       console.log("access and refresh tokens set");
 
       // save user email to Firestore - can remove later if not needed
-      const userEmail = await FirebaseService.getUserEmail(userId);
+      // const userEmail = await FirebaseService.getUserEmail(userId);
 
       // Use FirebaseService for the actual database operation
       await FirebaseService.setDocument("users", userId, {
         spotify: tokenData,
         spotifyConnected: true,
-        email: userEmail,
+        // email: userEmail,
       });
 
       return tokenData;
@@ -86,8 +90,46 @@ class TokenService {
    * @param {string} userId - User identifier
    * @returns {Promise<Object>} User's Spotify token data from Firestore
    */
+  // static async getSpotifyTokenData(userId) {
+  //   return await FirebaseService.getDocument("users", userId);
+  // }
+
   static async getSpotifyTokenData(userId) {
-    return await FirebaseService.getDocument("users", userId);
+    try {
+      const userDoc = await FirebaseService.getDocument("users", userId);
+      // const userDoc = await db.collection("users").doc(userId).get();
+      // if (!userDoc) {
+      //   console.log(`No document found for user ${userId}`);
+
+      //   // must return an object and not res.status() directly, helper function doens't have access to res
+      //   return {
+      //     error: true,
+      //     message: `No document found for user ${userId}`,
+      //   };
+      // }
+
+      const userData = userDoc;
+
+      if (!userDoc || !userData.spotify || !userData.spotify.access_token) {
+        console.log(`User ${userId} has no Spotify token stored`);
+        return {
+          error: true,
+          message: `No Spotify token found for user ${userId}`,
+          requiresAuth: true, // indicates if the user needs to authenticate - no token exists
+        };
+      }
+      // return the token data
+      return {
+        error: false,
+        data: userData.spotify,
+      };
+    } catch (error) {
+      console.error(`Error fetching Spotify token for user ${userId}:`, error);
+      return {
+        error: true,
+        message: `Error fetching Spotify token for user ${userId}: ${error.message}`,
+      };
+    }
   }
 }
 

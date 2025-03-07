@@ -33,5 +33,11 @@ router.put(
   spotifyAuthMiddleware,
   PlaylistSessionController.joinSession
 );
+router.post(
+  "/create-playlist",
+  verifyFirebaseToken,
+  spotifyAuthMiddleware,
+  PlaylistSessionController.createPlaylist
+);
 
 module.exports = router;

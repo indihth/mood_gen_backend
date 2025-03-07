@@ -68,6 +68,7 @@ class FirebaseService {
   }
 
   static async getUserEmail(userId) {
+    // const userId = req.session.uid;
     try {
       const user = await admin.auth().getUser(userId);
       return user.email;

@@ -38,7 +38,8 @@ router.get("/callback", async (req, res) => {
   }
 
   try {
-    const accessTokenData = await TokenService.getAccessToken(req.query.code);
+    const accessTokenData = await TokenService.getAccessToken(req);
+    // const accessTokenData = await TokenService.getAccessToken(req.query.code);
     // console log accessTokenData to see what it looks like
     console.log(`accessTokenData: ${accessTokenData}`);
     // await UserService.saveSpotifyToken(userId, accessTokenData);
