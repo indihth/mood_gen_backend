@@ -31,7 +31,7 @@ class PlaylistSessionService {
       if (user.listeningHistory) {
         listeningHistory = listeningHistory.concat(
           // merges all listening histories into a single array
-          user.listeningHistory.slice(0, 15)
+          user.listeningHistory.slice(0, 10)
         );
       }
     });

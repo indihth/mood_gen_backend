@@ -59,11 +59,11 @@ class PlaylistSessionController {
         await PlaylistSessionServices.getAllListeningHistory(sessionId);
 
       return res.json({
-        message: "Successfully get user listening history",
+        message: "Successfully created playlist",
         listeningHistory: listeningHistory,
       });
     } catch (error) {
-      console.error("Error getting user listening history from db:", error);
+      console.error("Error getting playlist from db:", error);
       res.status(500).json({ error: error.message });
     }
   }
