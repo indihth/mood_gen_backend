@@ -27,6 +27,7 @@ class PlaylistSessionController {
         users: {
           [req.session.uid]: {
             displayName: userProfile.display_name,
+            product: userProfile.product,
             // listeningHistory: [...listeningHistory],
             isAdmin: true,
             joinedAt: new Date(),
@@ -43,7 +44,7 @@ class PlaylistSessionController {
 
       // Store listening history using user id as key
       const historyData = {
-        listeningHistory,
+        ...listeningHistory,
       };
 
       // Add listening history to the session subcollection
@@ -67,7 +68,7 @@ class PlaylistSessionController {
   // // add user to session
   static async joinSession(req, res) {
     try {
-      const sessionId = "upMm9lX6pE4Rav6fvQGt";
+      const sessionId = "eM4zvPgXFi0goK1XNnvq";
       const userId = req.session.uid;
 
       // Get the existing session data
@@ -89,6 +90,7 @@ class PlaylistSessionController {
         [userId]: {
           // listeningHistory: listeningHistory,
           displayName: userProfile.display_name,
+          product: userProfile.product,
           isAdmin: false,
           joinedAt: new Date(),
         },
@@ -106,6 +108,7 @@ class PlaylistSessionController {
         newUserData,
         "users"
       );
+      console.log("controller: session doc updated");
 
       // Add listening history to the session subcollection
       await FirebaseService.setDocumentInSubcollection(
@@ -128,13 +131,14 @@ class PlaylistSessionController {
 
   static async createPlaylist(req, res) {
     try {
-      const sessionId = "upMm9lX6pE4Rav6fvQGt";
+      const sessionId = "eM4zvPgXFi0goK1XNnvq";
 
       // Create the playlist
       const playlistData = await PlaylistSessionServices.createBasePlaylist(
         res,
         req
       );
+      console.log("playlistData: ", playlistData);
 
       // Store the playlist data in Firestore session subcollection
       const playlistRef = await FirebaseService.setDocumentInSubcollection(
@@ -146,14 +150,13 @@ class PlaylistSessionController {
       );
 
       // console.log("playlistRef: ", playlistRef);
-      console.log("playlistData: ", playlistData);
 
       return res.json({
         message: "Successfully created playlist",
         data: playlistData,
       });
     } catch (error) {
-      console.error("Error creating playlist:", error);
+      console.error("Error creating playlist:", error.message);
       res.status(500).json({ error: error.message });
     }
   }
@@ -183,6 +186,26 @@ class PlaylistSessionController {
       return res.json({
         data: sessionData,
         message: "Get playlist session by ID",
+      });
+    } catch (error) {
+      res.status(500).json({ error: error.message });
+    }
+  }
+
+  static async getSessionUsers(req, res) {
+    try {
+      const { sessionId } = req.params;
+      const sessionUsers = await PlaylistSessionServices.getSessionUsers(
+        sessionId
+      );
+
+      if (!sessionUsers) {
+        return res.status(404).json({ error: "Session not found" });
+      }
+      console.log("sessionUsers: ", sessionUsers);
+      return res.json({
+        data: sessionUsers,
+        message: "Get session users",
       });
     } catch (error) {
       res.status(500).json({ error: error.message });

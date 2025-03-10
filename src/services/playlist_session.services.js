@@ -73,16 +73,16 @@ class PlaylistSessionService {
   // Create base playlist
   static async createBasePlaylist(res, req) {
     // try {
-    const sessionId = "upMm9lX6pE4Rav6fvQGt";
+    const sessionId = "eM4zvPgXFi0goK1XNnvq";
     const userId = req.session.uid;
     // Get the existing session data
     const sessionDoc = await FirebaseService.getDocument("sessions", sessionId);
-    console.log("sessionDoc: ", sessionDoc);
     if (!sessionDoc) {
       return res.status(404).json({ error: "Session not found" });
     }
 
     const listeningHistory = await this._getAllListeningHistory(sessionId);
+    // console.log("listeningHistory1 : ", listeningHistory);
 
     const playlistData = {
       sessionName: sessionDoc.sessionName,
@@ -97,6 +97,15 @@ class PlaylistSessionService {
 
     // Create a base playlist from the listening history
     // Return the base playlist ID
+  }
+
+  static async getSessionUsers(sessionId) {
+    const sessionDoc = await FirebaseService.getDocument("sessions", sessionId);
+    if (!sessionDoc) {
+      return null;
+    }
+
+    return sessionDoc.users;
   }
 
   // Set user Listening History in session

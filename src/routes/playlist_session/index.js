@@ -21,6 +21,13 @@ router.get(
   PlaylistSessionController.getSessions
 );
 
+router.get(
+  "/:sessionId/users",
+  verifyFirebaseToken,
+  spotifyAuthMiddleware,
+  PlaylistSessionController.getSessionUsers
+);
+
 router.post(
   "/create-session",
   verifyFirebaseToken,

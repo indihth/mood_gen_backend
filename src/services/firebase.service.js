@@ -24,21 +24,26 @@ class FirebaseService {
     subDocId,
     data
   ) {
-    if (!collection || !subcollection || !data) {
-      throw new Error("Missing required parameters");
-    }
+    try {
+      if (!collection || !subcollection || !data) {
+        throw new Error("Missing required parameters");
+      }
 
-    const docRef = admin
-      .firestore()
-      .collection(collection)
-      .doc(docId)
-      .collection(subcollection);
+      const docRef = admin
+        .firestore()
+        .collection(collection)
+        .doc(docId)
+        .collection(subcollection);
 
-    if (subDocId === "") {
-      // if no id provided, let Firebase create one
-      return docRef.add(data);
+      if (subDocId === "") {
+        // if no id provided, let Firebase create one
+        return await docRef.add(data);
+      }
+      return await docRef.doc(subDocId).set(data);
+    } catch (error) {
+      console.error("Error setting document in subcollection:", error);
+      throw error; // Re-throw to allow caller to handle the error
     }
-    return docRef.doc(subDocId).set(data);
   }
 
   static async updateDocument(collection, docId, data) {
