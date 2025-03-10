@@ -15,38 +15,48 @@ class PlaylistSessionService {
   // Remove user from a playlist session
 
   // Get all users listening history in a playlist session
-  static async getAllListeningHistory(sessionId) {
-    // Get all users listening history in a playlist session
-    // map over all users and return their listening history
-    const sessionDoc = await FirebaseService.getDocument("sessions", sessionId);
-    if (!sessionDoc) {
-      return null;
+  static async _getAllListeningHistory(sessionId) {
+    const listeningHistoryDocs = await FirebaseService.getSubcollection(
+      "sessions",
+      sessionId,
+      "listeningHistory"
+    );
+
+    if (!listeningHistoryDocs || listeningHistoryDocs.length === 0) {
+      return [];
     }
 
-    const users = sessionDoc.users;
-    let listeningHistory = [];
-
     // Flatten all listening histories into a single array
-    Object.values(users).forEach((user) => {
-      if (user.listeningHistory) {
-        listeningHistory = listeningHistory.concat(
-          // merges all listening histories into a single array
-          user.listeningHistory.slice(0, 10)
-        );
-      }
-    });
+    let allTracks = [];
+
+    allTracks = listeningHistoryDocs.map((user) => ({
+      id: user.id,
+      tracks: Object.values(user.tracks).slice(0, 10), // Get the first 10 tracks, convert object to array
+    }));
+
+    // Combine all tracks from each user into a single array
+    const justTracks = allTracks.reduce((acc, user) => {
+      return acc.concat(user.tracks).splice(0, 20);
+    }, []);
+
+    // listeningHistoryDocs.forEach((doc) => {
+    //   allTracks = allTracks.concat(doc.tracks.slice(0, 10));
+    // });
 
     // TODO: filter out duplicates
-
     // TODO: evenly distribute songs
 
-    console.log("All listening history: ", listeningHistory);
-    return listeningHistory;
+    return justTracks;
   }
 
   // Get listening history from session by user ID
   static async getListeningHistoryByUser(sessionId, userId, range = 10) {
-    const sessionDoc = await FirebaseService.getDocument("sessions", sessionId);
+    const sessionDoc = await FirebaseService.getSubcollectionDocument(
+      "sessions",
+      sessionId,
+      "listeningHistory",
+      userId
+    );
     if (!sessionDoc) {
       return null;
     }
@@ -61,13 +71,45 @@ class PlaylistSessionService {
   }
 
   // Create base playlist
-  static async createBasePlaylist(sessionId) {
-    // Get all users listening history
-    const listeningHistory = await this.getAllListeningHistory(sessionId);
+  static async createBasePlaylist(res, req) {
+    // try {
+    const sessionId = "upMm9lX6pE4Rav6fvQGt";
+    const userId = req.session.uid;
+    // Get the existing session data
+    const sessionDoc = await FirebaseService.getDocument("sessions", sessionId);
+    console.log("sessionDoc: ", sessionDoc);
+    if (!sessionDoc) {
+      return res.status(404).json({ error: "Session not found" });
+    }
+
+    const listeningHistory = await this._getAllListeningHistory(sessionId);
+
+    const playlistData = {
+      sessionName: sessionDoc.sessionName,
+      tracks: listeningHistory,
+    };
+    // console.log("listeningHistory: ", listeningHistory);
+    return playlistData;
+    // } catch (error) {
+    //   console.error("Error getting playlist from db:", error);
+    //   res.status(500).json({ error: error.message });
+    // }
 
     // Create a base playlist from the listening history
     // Return the base playlist ID
   }
+
+  // Set user Listening History in session
+  // static async setUserListeningHistory(sessionId, userId, listeningHistory) {
+  //   // Getting data
+  //   const listeningHistory = await SpotifyService.getRecentHistory();
+  //   const userProfile = await SpotifyService.getUserProfile();
+
+  //   // Store listening history using user id as key
+  //   const historyData = {
+  //     [req.session.uid]: listeningHistory,
+  //   };
+  // }
 
   // Add a song to a playlist session
 

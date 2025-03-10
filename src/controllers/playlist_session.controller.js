@@ -16,54 +16,50 @@ class PlaylistSessionController {
 
   static async createSession(req, res) {
     try {
-      const listeningHistory = await SpotifyService.getRecentHistory();
+      // Get user's listening history and profile data - Promise.all to run in parallel
+      const [listeningHistory, userProfile] = await Promise.all([
+        SpotifyService.getRecentHistory(),
+        SpotifyService.getUserProfile(),
+      ]);
 
       const sessionData = {
+        sessionName: "Test Session",
         users: {
           [req.session.uid]: {
-            listeningHistory: [...listeningHistory],
+            displayName: userProfile.display_name,
+            // listeningHistory: [...listeningHistory],
             isAdmin: true,
             joinedAt: new Date(),
           },
         },
       };
 
-      // Get playlist sessions data from Firestore
-      const session = await FirebaseService.setDocument(
+      // Create main session document first and save a reference to it
+      const sessionRef = await FirebaseService.setDocument(
         "sessions",
         "",
         sessionData
       );
 
-      res.json({ data: session, message: "New playlist session created" });
-    } catch (error) {
-      res.status(500).json({ error: error.message });
-    }
-  }
+      // Store listening history using user id as key
+      const historyData = {
+        listeningHistory,
+      };
 
-  static async createPlaylist(req, res) {
-    try {
-      const sessionId = "JzIwwJr5UybGpWeK9aU5";
-      const userId = req.session.uid;
-
-      // Get the existing session data
-      const sessionDoc = await FirebaseService.getDocument(
+      // Add listening history to the session subcollection
+      await FirebaseService.setDocumentInSubcollection(
         "sessions",
-        sessionId
+        sessionRef.id,
+        "listeningHistory",
+        req.session.uid,
+        historyData
       );
-      if (!sessionDoc) {
-        return res.status(404).json({ error: "Session not found" });
-      }
-
-      const listeningHistory =
-        await PlaylistSessionServices.getAllListeningHistory(sessionId);
 
       return res.json({
-        message: "Successfully created playlist",
-        listeningHistory: listeningHistory,
+        message: "Successfully created session",
+        session: sessionRef,
       });
     } catch (error) {
-      console.error("Error getting playlist from db:", error);
       res.status(500).json({ error: error.message });
     }
   }
@@ -71,7 +67,7 @@ class PlaylistSessionController {
   // // add user to session
   static async joinSession(req, res) {
     try {
-      const sessionId = "JzIwwJr5UybGpWeK9aU5";
+      const sessionId = "upMm9lX6pE4Rav6fvQGt";
       const userId = req.session.uid;
 
       // Get the existing session data
@@ -83,33 +79,81 @@ class PlaylistSessionController {
         return res.status(404).json({ error: "Session not found" });
       }
 
-      const listeningHistory = await SpotifyService.getRecentHistory();
+      const [listeningHistory, userProfile] = await Promise.all([
+        SpotifyService.getRecentHistory(),
+        SpotifyService.getUserProfile(),
+      ]);
 
       // Create update object with the new user data
       const newUserData = {
-        [`${userId}`]: {
-          listeningHistory: listeningHistory,
+        [userId]: {
+          // listeningHistory: listeningHistory,
+          displayName: userProfile.display_name,
           isAdmin: false,
           joinedAt: new Date(),
         },
       };
 
+      // Store listening history using user id as key
+      const historyData = {
+        ...listeningHistory,
+      };
+
       // Update the session document
-      await FirebaseService.addToDocument(
+      const updatedSessionDoc = await FirebaseService.addToDocument(
         "sessions",
         sessionId,
         newUserData,
         "users"
       );
 
-      res.json({
-        message: "Successfully joined session",
-        sessionId: sessionId,
-      });
+      // Add listening history to the session subcollection
+      await FirebaseService.setDocumentInSubcollection(
+        "sessions",
+        sessionId,
+        "listeningHistory",
+        userId,
+        historyData
+      );
 
-      return;
+      return res.json({
+        message: "Successfully joined session",
+        session: updatedSessionDoc,
+      });
     } catch (error) {
       console.error("Error joining session:", error);
+      res.status(500).json({ error: error.message });
+    }
+  }
+
+  static async createPlaylist(req, res) {
+    try {
+      const sessionId = "upMm9lX6pE4Rav6fvQGt";
+
+      // Create the playlist
+      const playlistData = await PlaylistSessionServices.createBasePlaylist(
+        res,
+        req
+      );
+
+      // Store the playlist data in Firestore session subcollection
+      const playlistRef = await FirebaseService.setDocumentInSubcollection(
+        "sesssions",
+        sessionId,
+        "shadow_playlist",
+        "",
+        playlistData
+      );
+
+      // console.log("playlistRef: ", playlistRef);
+      console.log("playlistData: ", playlistData);
+
+      return res.json({
+        message: "Successfully created playlist",
+        data: playlistData,
+      });
+    } catch (error) {
+      console.error("Error creating playlist:", error);
       res.status(500).json({ error: error.message });
     }
   }
@@ -121,6 +165,25 @@ class PlaylistSessionController {
 
       console.log("sessionData", sessionData);
       res.json({ data: sessionData, message: "Get playlist sessions" });
+    } catch (error) {
+      res.status(500).json({ error: error.message });
+    }
+  }
+
+  // Get session by Id
+  static async getSession(req, res) {
+    try {
+      const { id } = req.params;
+      const sessionData = await FirebaseService.getDocument("sessions", id);
+
+      if (!sessionData) {
+        return res.status(404).json({ error: "Session not found" });
+      }
+
+      return res.json({
+        data: sessionData,
+        message: "Get playlist session by ID",
+      });
     } catch (error) {
       res.status(500).json({ error: error.message });
     }

@@ -3,6 +3,7 @@ const router = express.Router();
 const verifyFirebaseToken = require("../../middleware/auth.middleware");
 const spotifyAuthMiddleware = require("../../middleware/spotifyAuth.middleware");
 const PlaylistSessionController = require("../../controllers/playlist_session.controller");
+const SpotifyService = require("../../services/spotify.service");
 
 // ...existing code...
 

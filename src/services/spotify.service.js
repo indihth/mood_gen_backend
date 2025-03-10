@@ -59,6 +59,28 @@ class SpotifyService {
     }
   }
 
+  // get user profile
+  static async getUserProfile() {
+    try {
+      const data = await spotifyApi.getMe();
+
+      if (!data) {
+        throw new Error("No user profile found");
+      }
+
+      const userProfile = {
+        display_name: data.body.display_name,
+        product: data.body.product, // premium or free account
+      };
+      console.log("User profile: ", userProfile);
+
+      return userProfile;
+    } catch (error) {
+      console.error("Error getting user profile:", error);
+      throw new Error("Failed to get user profile");
+    }
+  }
+
   static async getRecentHistory(time_range = "long_term") {
     // NEED TO FETCH ALL PAGINATED DATA
     try {

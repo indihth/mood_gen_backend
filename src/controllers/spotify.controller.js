@@ -1,6 +1,40 @@
 const { spotifyApi } = require("../config/spotify.config");
-const FirebaseService = require("../services/firebase.service");
 const SpotifyService = require("../services/spotify.service");
+const TokenService = require("../services/token.service");
+
+const login = (req, res) => {
+  res.redirect(spotifyApi.createAuthorizeURL(scopes));
+};
+
+const callback = async (req, res) => {
+  // Check if user is logged in
+  let userId = req.session.uid; // Hardcoded for testing, will be dynamic later
+
+  const error = req.query.error;
+
+  if (error) {
+    console.error("Callback Error:", error);
+    res.send(`Callback Error: ${error}`);
+    return;
+  }
+
+  try {
+    const accessTokenData = await TokenService.getAccessToken(req);
+    // const accessTokenData = await TokenService.getAccessToken(req.query.code);
+    // console log accessTokenData to see what it looks like
+    console.log(`accessTokenData: ${accessTokenData}`);
+    // await UserService.saveSpotifyToken(userId, accessTokenData);
+
+    // res.send("Success!");
+    res.redirect(`spotifyauth://callback?success=true`); // redirects to mobile app with success
+  } catch (error) {
+    console.error("Error getting Tokens:", error);
+    // res.send(`Error getting Tokens: ${error}`);
+    res.redirect(
+      `spotifyauth://callback?error=${encodeURIComponent(error.toString())}`
+    ); // redirects to mobile app with error message
+  }
+};
 
 /**
  * Get the user's top tracks from Spotify
@@ -84,6 +118,8 @@ const getPlaylist = async (req, res) => {
 };
 
 module.exports = {
+  login,
+  callback,
   getTopTracks,
   createPlaylist,
   getPlaylist,

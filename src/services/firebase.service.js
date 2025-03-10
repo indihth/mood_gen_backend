@@ -17,6 +17,30 @@ class FirebaseService {
     return admin.firestore().collection(collection).doc(docId).set(data);
   }
 
+  static async setDocumentInSubcollection(
+    collection,
+    docId,
+    subcollection,
+    subDocId,
+    data
+  ) {
+    if (!collection || !subcollection || !data) {
+      throw new Error("Missing required parameters");
+    }
+
+    const docRef = admin
+      .firestore()
+      .collection(collection)
+      .doc(docId)
+      .collection(subcollection);
+
+    if (subDocId === "") {
+      // if no id provided, let Firebase create one
+      return docRef.add(data);
+    }
+    return docRef.doc(subDocId).set(data);
+  }
+
   static async updateDocument(collection, docId, data) {
     return admin.firestore().collection(collection).doc(docId).update(data);
   }
@@ -57,10 +81,38 @@ class FirebaseService {
     return doc.exists ? doc.data() : null;
   }
 
+  static async getSubcollectionDocument(
+    collection,
+    docId,
+    subcollection,
+    subDocId
+  ) {
+    const doc = await admin
+      .firestore()
+      .collection(collection)
+      .doc(docId)
+      .collection(subcollection)
+      .doc(subDocId)
+      .get();
+    return doc.exists ? doc.data() : null;
+  }
+
   // get whole collection
   static async getCollection(collection) {
     const snapshot = await admin.firestore().collection(collection).get();
     return snapshot.docs.map((doc) => doc.data());
+  }
+
+  static async getSubcollection(collection, docId, subcollection) {
+    const snapshot = await admin
+      .firestore()
+      .collection(collection)
+      .doc(docId)
+      .collection(subcollection)
+      .get();
+
+    // returns an array of documents with id and data
+    return snapshot.docs.map((doc) => ({ id: doc.id, tracks: doc.data() }));
   }
 
   static async verifyToken(token) {
