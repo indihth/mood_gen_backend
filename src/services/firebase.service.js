@@ -9,12 +9,20 @@ class FirebaseService {
         "Missing required parameters: collection and data are required"
       );
     }
+    const collectionRef = admin.firestore().collection(collection);
+    let docRef;
 
     if (docId === "") {
-      // if not id provided, let Firebase create one
-      return admin.firestore().collection(collection).add(data);
+      // Let Firebase generate an ID
+      docRef = collectionRef.add(data);
+    } else {
+      // Use the provided ID
+      docRef = collectionRef.doc(docId);
+      await docRef.set(data);
     }
-    return admin.firestore().collection(collection).doc(docId).set(data);
+
+    // returns the document reference in both cases
+    return docRef;
   }
 
   static async setDocumentInSubcollection(
