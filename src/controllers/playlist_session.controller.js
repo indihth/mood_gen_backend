@@ -1,6 +1,7 @@
 const FirebaseService = require("../services/firebase.service");
 const SpotifyService = require("../services/spotify.service");
 const PlaylistSessionServices = require("../services/playlist_session.services");
+const session = require("express-session");
 
 class PlaylistSessionController {
   static async _mapTracksIds(tracks) {
@@ -23,6 +24,10 @@ class PlaylistSessionController {
 
   static async createSession(req, res) {
     try {
+      // Get playlist title from request body
+      const { title, description } = req.body;
+      console.log("title: ", title);
+
       // Get user's listening history and profile data - Promise.all to run in parallel
       const [listeningHistory, userProfile] = await Promise.all([
         SpotifyService.getRecentHistory(),
@@ -30,7 +35,8 @@ class PlaylistSessionController {
       ]);
 
       const sessionData = {
-        sessionName: "Test Session",
+        sessionName: title,
+        description: description,
         users: {
           [req.session.uid]: {
             displayName: userProfile.display_name,
@@ -151,16 +157,17 @@ class PlaylistSessionController {
         return res.status(404).json({ error: "Session not found" });
       }
 
-      if (sessionDoc.playlist.playlistId) {
+      if (!sessionDoc.playlist?.playlistId) {
+        // if none, create new playlist and save to db
+        playlistData = await PlaylistSessionServices.createNewPlaylist(
+          sessionId
+        );
+        console.log("new playlist created");
+      } else {
+        // get from db
         playlistData = await FirebaseService.getDocument(
-          // fetch playlist data from db
           "playlist",
           sessionDoc.playlist.playlistId
-        );
-      } else {
-        playlistData = await PlaylistSessionServices.createNewPlaylist(
-          // create new playlist and save to db
-          sessionId
         );
       }
 
@@ -200,6 +207,12 @@ class PlaylistSessionController {
         return res.status(404).json({ error: "Session not found" });
       }
 
+      if (!sessionDoc.sessionName || !sessionDoc.description) {
+        return res
+          .status(400)
+          .json({ error: "Session name and description are required" });
+      }
+
       console.log("sessionDoc.playlistId: ", sessionDoc.playlist.playlistId);
 
       // Get playlist data from playlist collection
@@ -216,8 +229,8 @@ class PlaylistSessionController {
 
       // Create playlist on Spotify
       const playlist = await SpotifyService.createPlaylist(
-        "West coast trip",
-        "Our music for the 2025 Galway trip",
+        sessionDoc.sessionName,
+        sessionDoc.description,
         true
       );
 

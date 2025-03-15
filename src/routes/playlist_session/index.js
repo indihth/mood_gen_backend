@@ -3,9 +3,6 @@ const router = express.Router();
 const verifyFirebaseToken = require("../../middleware/auth.middleware");
 const spotifyAuthMiddleware = require("../../middleware/spotifyAuth.middleware");
 const PlaylistSessionController = require("../../controllers/playlist_session.controller");
-const SpotifyService = require("../../services/spotify.service");
-
-// ...existing code...
 
 router.get(
   "/user-data",
@@ -47,13 +44,6 @@ router.get(
   verifyFirebaseToken,
   spotifyAuthMiddleware,
   PlaylistSessionController.loadPlaylist
-);
-
-router.post(
-  "/:sessionId/create-playlist",
-  verifyFirebaseToken,
-  spotifyAuthMiddleware,
-  PlaylistSessionController.createPlaylist
 );
 
 router.post(
