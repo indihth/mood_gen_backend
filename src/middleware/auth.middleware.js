@@ -18,17 +18,12 @@ const verifyFirebaseToken = async (req, res, next) => {
     } else if (req.query.token) {
       firebaseToken = req.query.token;
     }
-    // const authHeader = req.headers.authorization;
-    // const firebaseToken = authHeader?.split("Bearer ")[1];
-
-    // if (!req.query.token) {
-    //   const authHeader = req.headers.authorization;
-    //   const firebaseToken = authHeader?.split("Bearer ")[1];
+    // } else if (req.query.token) {
+    //   firebaseToken = req.query.token;
     // }
 
-    // const firebaseToken = req.query.token; // Get token from query string
-
     if (!firebaseToken) {
+      console.log("No token provided - auth middleware");
       return res.status(401).json({ error: "No token provided" });
     }
 
@@ -37,6 +32,11 @@ const verifyFirebaseToken = async (req, res, next) => {
     if (req.session) {
       // store UID in session
       req.session.uid = decodedToken.uid;
+    } else {
+      console.error(
+        "Session not available on request object - auth middleware"
+      );
+      return res.status(500).json({ error: "Session not available" });
     }
 
     next();

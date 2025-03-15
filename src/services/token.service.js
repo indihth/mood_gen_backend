@@ -18,7 +18,6 @@ class TokenService {
     try {
       const code = req.query.code;
       const userId = req.session.uid;
-      console.log("userId: ", userId);
 
       const data = await spotifyApi.authorizationCodeGrant(code);
       const tokenData = {

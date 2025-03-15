@@ -136,27 +136,30 @@ class PlaylistSessionController {
       // Create the playlist
       const playlistData = await PlaylistSessionServices.createBasePlaylist(
         res,
-        req
+        req,
+        sessionId
       );
-      console.log("playlistData: ", playlistData);
 
-      // Store the playlist data in Firestore session subcollection
-      const playlistRef = await FirebaseService.setDocumentInSubcollection(
-        "sesssions",
-        sessionId,
-        "shadow_playlist",
+      // Store playlist data in the playlist collection
+      const addedPlaylistDoc = await FirebaseService.setDocument(
+        "playlist",
         "",
         playlistData
       );
+      console.log("addedPlaylistDoc id: ", addedPlaylistDoc.id);
 
-      // console.log("playlistRef: ", playlistRef);
+      // Add playlist ID to the session document
+      await PlaylistSessionServices.addPlaylistToSessionDoc(
+        sessionId,
+        addedPlaylistDoc.id
+      );
 
       return res.json({
         message: "Successfully created playlist",
         data: playlistData,
       });
     } catch (error) {
-      console.error("Error creating playlist:", error.message);
+      console.error("Error creating playlist - controller:", error.message);
       res.status(500).json({ error: error.message });
     }
   }
