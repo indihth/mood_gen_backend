@@ -1,4 +1,4 @@
-const { spotifyApi } = require("../config/spotify.config");
+const { spotifyApi, scopes } = require("../config/spotify.config");
 const SpotifyService = require("../services/spotify.service");
 const TokenService = require("../services/token.service");
 

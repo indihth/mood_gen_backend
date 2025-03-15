@@ -36,13 +36,13 @@ router.post(
 );
 
 router.put(
-  "/join-session",
+  "/:sessionId/join-session",
   verifyFirebaseToken,
   spotifyAuthMiddleware,
   PlaylistSessionController.joinSession
 );
 router.post(
-  "/create-playlist",
+  "/:sessionId/create-playlist",
   verifyFirebaseToken,
   spotifyAuthMiddleware,
   PlaylistSessionController.createPlaylist

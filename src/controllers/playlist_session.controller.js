@@ -68,7 +68,7 @@ class PlaylistSessionController {
   // // add user to session
   static async joinSession(req, res) {
     try {
-      const sessionId = "eM4zvPgXFi0goK1XNnvq";
+      const { sessionId } = req.params;
       const userId = req.session.uid;
 
       // Get the existing session data
@@ -131,7 +131,7 @@ class PlaylistSessionController {
 
   static async createPlaylist(req, res) {
     try {
-      const sessionId = "eM4zvPgXFi0goK1XNnvq";
+      const { sessionId } = req.params;
 
       // Create the playlist
       const playlistData = await PlaylistSessionServices.createBasePlaylist(

@@ -81,7 +81,7 @@ class SpotifyService {
     }
   }
 
-  static async getRecentHistory(time_range = "long_term") {
+  static async getRecentHistory(time_range = "short_term") {
     // NEED TO FETCH ALL PAGINATED DATA
     try {
       // const data = await spotifyApi.getMyRecentlyPlayedTracks({
