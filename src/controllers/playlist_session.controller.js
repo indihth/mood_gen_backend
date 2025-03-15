@@ -164,6 +164,66 @@ class PlaylistSessionController {
     }
   }
 
+  static async savePlaylistToSpotify(req, res) {
+    try {
+      const { sessionId } = req.params;
+
+      // Get playlist id from session document
+      const sessionDoc = await FirebaseService.getDocument(
+        "sessions",
+        sessionId
+      );
+      if (!sessionDoc) {
+        return res.status(404).json({ error: "Session not found" });
+      }
+
+      console.log("sessionDoc.playlistId: ", sessionDoc.playlist.playlistId);
+
+      // Get playlist data from playlist collection
+      const playlistDoc = await FirebaseService.getDocument(
+        "playlist",
+        sessionDoc.playlist.playlistId
+      );
+
+      // Get tracks from playlist data - map to Spotify track id format
+      const trackIds = playlistDoc.tracks.map(
+        (track) => `spotify:track:${track.trackId}`
+      );
+      // console.log("trackIds: ", trackIds);
+
+      // Create playlist on Spotify
+      const playlist = await SpotifyService.createPlaylist(
+        "West coast trip",
+        "Our music for the 2025 Galway trip",
+        true
+      );
+
+      const playlistId = playlist.id;
+
+      // Save playlist to Spotify
+      const tracksAdded = await SpotifyService.addTracksToPlaylist(
+        playlistId,
+        trackIds
+      );
+      console.log("tracksAdded: ", tracksAdded);
+
+      return res.json({
+        message: "Successfully saved playlist",
+        data: playlistDoc,
+      });
+    } catch (error) {
+      console.error("Error saving playlist - controller:", error.message);
+      res.status(500).json({ error: error.message });
+    }
+  }
+
+  static async _mapTracksIds(tracks) {
+    // "spotify:track:51eSHglvG1RJXtL3qI5trr",
+    const trackIds = tracks.map((track) => `spotify:track:${track.id}`);
+
+    return trackIds;
+  }
+
   static async getSessions(req, res) {
     try {
       // Get playlist sessions data from Firestore

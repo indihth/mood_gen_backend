@@ -47,5 +47,11 @@ router.post(
   spotifyAuthMiddleware,
   PlaylistSessionController.createPlaylist
 );
+router.post(
+  "/:sessionId/save-playlist",
+  verifyFirebaseToken,
+  spotifyAuthMiddleware,
+  PlaylistSessionController.savePlaylistToSpotify
+);
 
 module.exports = router;
