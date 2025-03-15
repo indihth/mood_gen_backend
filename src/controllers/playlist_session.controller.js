@@ -171,9 +171,19 @@ class PlaylistSessionController {
         );
       }
 
+      // map playlist data to return selected fields
+      const mappedData = {
+        title: sessionDoc.sessionName,
+        description: sessionDoc.description,
+        playlistId: sessionDoc.playlist.playlistId,
+        tracks: playlistData.tracks,
+      };
+
+      console.log("mappedData: ", mappedData);
+
       return res.json({
         message: "Successfully loaded playlist",
-        data: playlistData,
+        data: mappedData,
       });
     } catch (error) {
       // Handle specific error types
