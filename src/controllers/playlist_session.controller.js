@@ -3,6 +3,13 @@ const SpotifyService = require("../services/spotify.service");
 const PlaylistSessionServices = require("../services/playlist_session.services");
 
 class PlaylistSessionController {
+  static async _mapTracksIds(tracks) {
+    // "spotify:track:51eSHglvG1RJXtL3qI5trr",
+    const trackIds = tracks.map((track) => `spotify:track:${track.id}`);
+
+    return trackIds;
+  }
+
   static async getUserData(req, res) {
     try {
       res.json({
@@ -129,41 +136,57 @@ class PlaylistSessionController {
     }
   }
 
-  static async createPlaylist(req, res) {
-    try {
-      const { sessionId } = req.params;
+  static async loadPlaylist(req, res) {
+    const { sessionId } = req.params;
+    let playlistData;
 
-      // Create the playlist
-      const playlistData = await PlaylistSessionServices.createBasePlaylist(
-        res,
-        req,
+    try {
+      // check if session already has a playlist
+      const sessionDoc = await FirebaseService.getDocument(
+        "sessions",
         sessionId
       );
 
-      // Store playlist data in the playlist collection
-      const addedPlaylistDoc = await FirebaseService.setDocument(
-        "playlist",
-        "",
-        playlistData
-      );
-      console.log("addedPlaylistDoc id: ", addedPlaylistDoc.id);
+      if (!sessionDoc) {
+        return res.status(404).json({ error: "Session not found" });
+      }
 
-      // Add playlist ID to the session document
-      await PlaylistSessionServices.addPlaylistToSessionDoc(
-        sessionId,
-        addedPlaylistDoc.id
-      );
+      if (sessionDoc.playlist.playlistId) {
+        playlistData = await FirebaseService.getDocument(
+          // fetch playlist data from db
+          "playlist",
+          sessionDoc.playlist.playlistId
+        );
+      } else {
+        playlistData = await PlaylistSessionServices.createNewPlaylist(
+          // create new playlist and save to db
+          sessionId
+        );
+      }
 
       return res.json({
-        message: "Successfully created playlist",
+        message: "Successfully loaded playlist",
         data: playlistData,
       });
     } catch (error) {
-      console.error("Error creating playlist - controller:", error.message);
-      res.status(500).json({ error: error.message });
+      // Handle specific error types
+      if (error.message === "No listening history found") {
+        return res.status(404).json({
+          error: "Cannot create playlist: No listening history found",
+        });
+      }
+
+      if (error.message === "Session not found") {
+        return res.status(404).json({ error: error.message });
+      }
+
+      console.error("Error creating playlist:", error);
+      return res.status(500).json({
+        error: "Failed to create playlist",
+        details: error.message,
+      });
     }
   }
-
   static async savePlaylistToSpotify(req, res) {
     try {
       const { sessionId } = req.params;
@@ -215,13 +238,6 @@ class PlaylistSessionController {
       console.error("Error saving playlist - controller:", error.message);
       res.status(500).json({ error: error.message });
     }
-  }
-
-  static async _mapTracksIds(tracks) {
-    // "spotify:track:51eSHglvG1RJXtL3qI5trr",
-    const trackIds = tracks.map((track) => `spotify:track:${track.id}`);
-
-    return trackIds;
   }
 
   static async getSessions(req, res) {

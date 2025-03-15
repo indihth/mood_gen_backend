@@ -41,12 +41,21 @@ router.put(
   spotifyAuthMiddleware,
   PlaylistSessionController.joinSession
 );
+
+router.get(
+  "/:sessionId/load-playlist",
+  verifyFirebaseToken,
+  spotifyAuthMiddleware,
+  PlaylistSessionController.loadPlaylist
+);
+
 router.post(
   "/:sessionId/create-playlist",
   verifyFirebaseToken,
   spotifyAuthMiddleware,
   PlaylistSessionController.createPlaylist
 );
+
 router.post(
   "/:sessionId/save-playlist",
   verifyFirebaseToken,

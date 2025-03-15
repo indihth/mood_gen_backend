@@ -1,5 +1,7 @@
 const admin = require("firebase-admin");
 const FirebaseService = require("./firebase.service");
+const SpotifyService = require("./spotify.service");
+const PlaylistSessionServices = require("./playlist_session.services");
 
 class PlaylistSessionService {
   // Create a new playlist session
@@ -7,12 +9,6 @@ class PlaylistSessionService {
     // Create a new playlist session
     // Return the playlist session ID
   }
-
-  // Get a playlist session by ID
-
-  // Add user to a playlist session
-
-  // Remove user from a playlist session
 
   // Get all users listening history in a playlist session
   static async _getAllListeningHistory(sessionId) {
@@ -23,7 +19,7 @@ class PlaylistSessionService {
     );
 
     if (!listeningHistoryDocs || listeningHistoryDocs.length === 0) {
-      return [];
+      throw new Error("No listening history found");
     }
 
     // Flatten all listening histories into a single array
@@ -71,28 +67,27 @@ class PlaylistSessionService {
   }
 
   // Create base playlist
-  static async createBasePlaylist(res, req, sessionId) {
+  static async _createTrackList(sessionId) {
     // Get the existing session data
     const sessionDoc = await FirebaseService.getDocument("sessions", sessionId);
     if (!sessionDoc) {
-      return res.status(404).json({ error: "Session not found" });
+      throw new Error("Session not found");
     }
-
     const listeningHistory = await this._getAllListeningHistory(sessionId);
     // console.log("listeningHistory1 : ", listeningHistory);
 
-    const playlistData = {
+    const trackListData = {
       sessionName: sessionDoc.sessionName,
       tracks: listeningHistory,
     };
 
-    return playlistData;
+    return trackListData;
   }
 
-  static async addPlaylistToSessionDoc(sessionId, playlistId) {
+  static async _addPlaylistToSessionDoc(sessionId, playlistId) {
     const sessionDoc = await FirebaseService.getDocument("sessions", sessionId);
     if (!sessionDoc) {
-      return null;
+      throw new Error("Session not found");
     }
 
     const updatedSessionDoc = await FirebaseService.addToDocument(
@@ -103,6 +98,24 @@ class PlaylistSessionService {
     );
 
     return updatedSessionDoc;
+  }
+
+  static async createNewPlaylist(sessionId) {
+    // Create the playlist
+    const playlistData = await this._createTrackList(sessionId);
+
+    // Store playlist data in the playlist collection
+    const addedPlaylistDoc = await FirebaseService.setDocument(
+      "playlist",
+      "",
+      playlistData
+    );
+    console.log("addedPlaylistDoc id: ", addedPlaylistDoc.id);
+
+    // Add playlist ID to the session document
+    await this._addPlaylistToSessionDoc(sessionId, addedPlaylistDoc.id);
+
+    return playlistData;
   }
 
   static async getSessionUsers(sessionId) {
