@@ -7,11 +7,11 @@ class UserService {
   // High-level business operations
   static async saveSpotifyToken(userId, accessTokenData) {
     const userEmail = await FirebaseService.getUserEmail(userId);
-    const tokenData = await {
-      ...accessTokenData, // accessToken, refreshToken, expiresIn
-      created_at: new Date(),
-      last_updated: new Date(),
-    };
+    // const tokenData = await {
+    //   ...accessTokenData, // accessToken, refreshToken, expiresIn
+    //   created_at: new Date(),
+    //   last_updated: new Date(),
+    // };
 
     // Validate token format
     // if (!this.isValidSpotifyToken(tokenData)) {
@@ -20,7 +20,7 @@ class UserService {
 
     // Use FirebaseService for the actual database operation
     await FirebaseService.setDocument("users", userId, {
-      spotify: tokenData,
+      spotify: accessTokenData,
       spotifyConnected: true,
       email: userEmail,
     });

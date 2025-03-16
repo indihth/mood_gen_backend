@@ -89,6 +89,10 @@ class SpotifyService {
         time_range: time_range,
       });
 
+      if (!data) {
+        throw new Error("No recent history found");
+      }
+
       const mappedData = data.body.items.map((track) => {
         return {
           trackId: track.id,
@@ -99,15 +103,11 @@ class SpotifyService {
         };
       });
 
-      if (!mappedData) {
-        throw new Error("No recent history found");
-      }
-
       return mappedData;
       // res.json([...mappedData]);
     } catch (err) {
-      console.error("Error fetching recent history:", err.message);
-      // throw new Error("Failed to fetch recent history");
+      console.error("Error fetching recent history:", err);
+      throw new Error("Failed to fetch recent history");
     }
   }
 

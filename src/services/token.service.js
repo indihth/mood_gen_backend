@@ -35,12 +35,12 @@ class TokenService {
       // save user email to Firestore - can remove later if not needed
       // const userEmail = await FirebaseService.getUserEmail(userId);
 
-      // Use FirebaseService for the actual database operation
-      await FirebaseService.setDocument("users", userId, {
-        spotify: tokenData,
-        spotifyConnected: true,
-        // email: userEmail,
-      });
+      // // Use FirebaseService for the actual database operation
+      // await FirebaseService.setDocument("users", userId, {
+      //   spotify: tokenData,
+      //   spotifyConnected: true,
+      //   // email: userEmail,
+      // });
 
       return tokenData;
     } catch (error) {
