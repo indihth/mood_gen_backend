@@ -1,7 +1,6 @@
 const FirebaseService = require("../services/firebase.service");
 const SpotifyService = require("../services/spotify.service");
 const PlaylistSessionServices = require("../services/playlist_session.services");
-const session = require("express-session");
 
 class PlaylistSessionController {
   static async _mapTracksIds(tracks) {
@@ -22,40 +21,13 @@ class PlaylistSessionController {
     }
   }
 
-  static async _getUserDataAndHistory(userId, isAdmin = false) {
-    // Get user's listening history and profile data in parallel
-    const [listeningHistory, userProfile] = await Promise.all([
-      SpotifyService.getRecentHistory(),
-      SpotifyService.getUserProfile(),
-    ]);
-
-    // Prepare user data object
-    const userData = {
-      [userId]: {
-        displayName: userProfile.display_name,
-        product: userProfile.product,
-        isAdmin,
-        joinedAt: new Date(),
-      },
-    };
-
-    // Prepare history data object
-    const historyData = {
-      ...listeningHistory,
-    };
-
-    return { userData, historyData, userProfile };
-  }
-
   static async createSession(req, res) {
     try {
       const { title, description } = req.body;
       const userId = req.session.uid;
 
-      const { userData, historyData } = await this._getUserDataAndHistory(
-        userId,
-        true
-      );
+      const { userData, historyData } =
+        await PlaylistSessionServices.getUserDataAndHistory(userId, true);
 
       const sessionData = {
         sessionName: title,
@@ -70,14 +42,17 @@ class PlaylistSessionController {
         sessionData
       );
 
+      // TODO: integrate into _getUserDataAndHistory
       // Add listening history to user subcollection
-      await FirebaseService.setDocumentInSubcollection(
-        "users",
-        userId,
-        "listeningHistory",
-        "topSongs",
-        historyData
-      );
+      const listeningHistoryDoc =
+        await FirebaseService.setDocumentInSubcollection(
+          "users",
+          userId,
+          "listeningHistory",
+          "topSongs",
+          historyData
+        );
+      console.log("listeningHistoryDoc: ", listeningHistoryDoc);
 
       return res.json({
         message: "Successfully created session",
@@ -85,6 +60,8 @@ class PlaylistSessionController {
       });
     } catch (error) {
       res.status(500).json({ error: error.message });
+      console.log("Error creating session:", error);
+      throw new Error("Failed to create session", error);
     }
   }
 
@@ -101,10 +78,8 @@ class PlaylistSessionController {
         return res.status(404).json({ error: "Session not found" });
       }
 
-      const { userData, historyData } = await this._getUserDataAndHistory(
-        userId,
-        false
-      );
+      const { userData, historyData } =
+        await PlaylistSessionServices.getUserDataAndHistory(userId, false);
 
       // Update the session document
       const updatedSessionDoc = await FirebaseService.addToDocument(
@@ -114,6 +89,7 @@ class PlaylistSessionController {
         "users"
       );
 
+      // TODO: integrate into _getUserDataAndHistory
       // Add listening history to the session subcollection
       await FirebaseService.setDocumentInSubcollection(
         "sessions",

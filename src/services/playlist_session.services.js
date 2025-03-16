@@ -56,27 +56,6 @@ class PlaylistSessionService {
     return shuffledTracks;
   }
 
-  // Get listening history from session by user ID
-  static async getListeningHistoryByUser(sessionId, userId, range = 10) {
-    const sessionDoc = await FirebaseService.getSubcollectionDocument(
-      "sessions",
-      sessionId,
-      "listeningHistory",
-      userId
-    );
-    if (!sessionDoc) {
-      return null;
-    }
-
-    // const limitedHistory = [];
-    const listeningHistory = sessionDoc.users[userId].listeningHistory.slice(
-      0,
-      range
-    );
-    console.log("Listening history: ", listeningHistory);
-    return listeningHistory;
-  }
-
   // Create base playlist
   static async _createTrackList(sessionId) {
     // Get the existing session data
@@ -138,17 +117,28 @@ class PlaylistSessionService {
     return sessionDoc;
   }
 
-  // Set user Listening History in session
-  // static async setUserListeningHistory(sessionId, userId, listeningHistory) {
-  //   // Getting data
-  //   const listeningHistory = await SpotifyService.getRecentHistory();
-  //   const userProfile = await SpotifyService.getUserProfile();
+  static async getUserDataAndHistory(userId, isAdmin = false) {
+    const [listeningHistory, userProfile] = await Promise.all([
+      SpotifyService.getRecentHistory(),
+      SpotifyService.getUserProfile(),
+    ]);
 
-  //   // Store listening history using user id as key
-  //   const historyData = {
-  //     [req.session.uid]: listeningHistory,
-  //   };
-  // }
+    const userData = {
+      [userId]: {
+        userId,
+        displayName: userProfile.display_name,
+        product: userProfile.product,
+        isAdmin,
+        joinedAt: new Date(),
+      },
+    };
+
+    const historyData = {
+      ...listeningHistory,
+    };
+
+    return { userData, historyData };
+  }
 
   // Add a song to a playlist session
 
