@@ -25,9 +25,10 @@ class PlaylistSessionService {
     // Flatten all listening histories into a single array
     let allTracks = [];
 
+    // Get the first 10 tracks from each user
     allTracks = listeningHistoryDocs.map((user) => ({
       id: user.id,
-      tracks: Object.values(user.tracks).slice(0, 10), // Get the first 10 tracks, convert object to array
+      tracks: Object.values(user.tracks).slice(0, 10), // convert object to array
     }));
 
     // Combine all tracks from each user into a single array
@@ -35,14 +36,24 @@ class PlaylistSessionService {
       return acc.concat(user.tracks).splice(0, 20);
     }, []);
 
-    // listeningHistoryDocs.forEach((doc) => {
-    //   allTracks = allTracks.concat(doc.tracks.slice(0, 10));
-    // });
-
+    // Shuffle the tracks
+    const shuffledTracks = this._shuffleTracks(justTracks);
     // TODO: filter out duplicates
-    // TODO: evenly distribute songs
 
-    return justTracks;
+    return shuffledTracks;
+  }
+
+  static _shuffleTracks(tracks) {
+    // TODO: evenly distribute songs
+    // mix up the songs
+    const shuffledTracks = justTracks.sort(() => Math.random() - 0.5);
+
+    // Fisher-Yates shuffle - impliment later
+    // for (let i = shuffledTracks.length - 1; i > 0; i--) {
+    //   const j = Math.floor(Math.random() * (i + 1));
+    //   [shuffledTracks[i], shuffledTracks[j]] = [shuffledTracks[j], shuffledTracks[i]];
+    // }
+    return shuffledTracks;
   }
 
   // Get listening history from session by user ID
@@ -80,6 +91,7 @@ class PlaylistSessionService {
       sessionName: sessionDoc.sessionName,
       tracks: listeningHistory,
     };
+    console.log("trackListData: ", trackListData);
 
     return trackListData;
   }
@@ -110,7 +122,6 @@ class PlaylistSessionService {
       "",
       playlistData
     );
-    console.log("addedPlaylistDoc id: ", addedPlaylistDoc.id);
 
     // Add playlist ID to the session document
     await this._addPlaylistToSessionDoc(sessionId, addedPlaylistDoc.id);
@@ -124,7 +135,7 @@ class PlaylistSessionService {
       return null;
     }
 
-    return sessionDoc.users;
+    return sessionDoc;
   }
 
   // Set user Listening History in session
