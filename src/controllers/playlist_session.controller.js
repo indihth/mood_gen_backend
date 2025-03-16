@@ -22,50 +22,60 @@ class PlaylistSessionController {
     }
   }
 
+  static async _getUserDataAndHistory(userId, isAdmin = false) {
+    // Get user's listening history and profile data in parallel
+    const [listeningHistory, userProfile] = await Promise.all([
+      SpotifyService.getRecentHistory(),
+      SpotifyService.getUserProfile(),
+    ]);
+
+    // Prepare user data object
+    const userData = {
+      [userId]: {
+        displayName: userProfile.display_name,
+        product: userProfile.product,
+        isAdmin,
+        joinedAt: new Date(),
+      },
+    };
+
+    // Prepare history data object
+    const historyData = {
+      ...listeningHistory,
+    };
+
+    return { userData, historyData, userProfile };
+  }
+
   static async createSession(req, res) {
     try {
-      // Get playlist title from request body
       const { title, description } = req.body;
-      console.log("title: ", title);
+      const userId = req.session.uid;
 
-      // Get user's listening history and profile data - Promise.all to run in parallel
-      const [listeningHistory, userProfile] = await Promise.all([
-        SpotifyService.getRecentHistory(),
-        SpotifyService.getUserProfile(),
-      ]);
+      const { userData, historyData } = await this._getUserDataAndHistory(
+        userId,
+        true
+      );
 
       const sessionData = {
         sessionName: title,
-        description: description,
-        users: {
-          [req.session.uid]: {
-            displayName: userProfile.display_name,
-            product: userProfile.product,
-            // listeningHistory: [...listeningHistory],
-            isAdmin: true,
-            joinedAt: new Date(),
-          },
-        },
+        description,
+        users: userData,
       };
 
-      // Create main session document first and save a reference to it
+      // Create main session document
       const sessionRef = await FirebaseService.setDocument(
         "sessions",
         "",
         sessionData
       );
 
-      // Store listening history using user id as key
-      const historyData = {
-        ...listeningHistory,
-      };
-
-      // Add listening history to the session subcollection
+      // Add listening history to user subcollection
       await FirebaseService.setDocumentInSubcollection(
-        "sessions",
-        sessionRef.id,
+        "users",
+        userId,
         "listeningHistory",
-        req.session.uid,
+        "topSongs",
         historyData
       );
 
@@ -78,13 +88,11 @@ class PlaylistSessionController {
     }
   }
 
-  // // add user to session
   static async joinSession(req, res) {
     try {
       const { sessionId } = req.params;
       const userId = req.session.uid;
 
-      // Get the existing session data
       const sessionDoc = await FirebaseService.getDocument(
         "sessions",
         sessionId
@@ -93,35 +101,18 @@ class PlaylistSessionController {
         return res.status(404).json({ error: "Session not found" });
       }
 
-      const [listeningHistory, userProfile] = await Promise.all([
-        SpotifyService.getRecentHistory(),
-        SpotifyService.getUserProfile(),
-      ]);
-
-      // Create update object with the new user data
-      const newUserData = {
-        [userId]: {
-          // listeningHistory: listeningHistory,
-          displayName: userProfile.display_name,
-          product: userProfile.product,
-          isAdmin: false,
-          joinedAt: new Date(),
-        },
-      };
-
-      // Store listening history using user id as key
-      const historyData = {
-        ...listeningHistory,
-      };
+      const { userData, historyData } = await this._getUserDataAndHistory(
+        userId,
+        false
+      );
 
       // Update the session document
       const updatedSessionDoc = await FirebaseService.addToDocument(
         "sessions",
         sessionId,
-        newUserData,
+        userData,
         "users"
       );
-      console.log("controller: session doc updated");
 
       // Add listening history to the session subcollection
       await FirebaseService.setDocumentInSubcollection(
@@ -162,7 +153,6 @@ class PlaylistSessionController {
         playlistData = await PlaylistSessionServices.createNewPlaylist(
           sessionId
         );
-        console.log("new playlist created");
       } else {
         // get from db
         playlistData = await FirebaseService.getDocument(
@@ -175,11 +165,9 @@ class PlaylistSessionController {
       const mappedData = {
         title: sessionDoc.sessionName,
         description: sessionDoc.description,
-        playlistId: sessionDoc.playlist.playlistId,
+        playlistId: sessionDoc.playlist?.playlistId,
         tracks: playlistData.tracks,
       };
-
-      console.log("mappedData: ", mappedData);
 
       return res.json({
         message: "Successfully loaded playlist",
@@ -258,8 +246,11 @@ class PlaylistSessionController {
         data: playlistDoc,
       });
     } catch (error) {
-      console.error("Error saving playlist - controller:", error.message);
       res.status(500).json({ error: error.message });
+      return console.error(
+        "Error saving playlist - controller:",
+        error.message
+      );
     }
   }
 
