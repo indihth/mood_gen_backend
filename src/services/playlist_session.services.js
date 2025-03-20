@@ -46,7 +46,7 @@ class PlaylistSessionService {
   static _shuffleTracks(tracks) {
     // TODO: evenly distribute songs
     // mix up the songs
-    const shuffledTracks = justTracks.sort(() => Math.random() - 0.5);
+    const shuffledTracks = tracks.sort(() => Math.random() - 0.5);
 
     // Fisher-Yates shuffle - impliment later
     // for (let i = shuffledTracks.length - 1; i > 0; i--) {
