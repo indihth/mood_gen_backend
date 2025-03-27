@@ -1,5 +1,5 @@
 const { spotifyApi } = require("../config/spotify.config");
-const FirebaseService = require("./firebase.service");
+const FirebaseService = require("./firebase.services");
 
 /**
  * Service class handling Spotify authentication token operations.

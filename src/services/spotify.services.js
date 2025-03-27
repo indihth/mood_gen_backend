@@ -1,6 +1,6 @@
 const { spotifyApi } = require("../config/spotify.config");
 // CIRCULAR DEPENDENCY WARNING: Importing UserService while it imports SpotifyService
-const UserService = require("./user.service");
+const UserService = require("./user.services");
 
 class SpotifyService {
   static async getAccessToken(code) {

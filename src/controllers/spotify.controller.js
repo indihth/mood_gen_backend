@@ -1,7 +1,7 @@
 const { spotifyApi, scopes } = require("../config/spotify.config");
-const SpotifyService = require("../services/spotify.service");
-const TokenService = require("../services/token.service");
-const UserService = require("../services/user.service");
+const SpotifyService = require("../services/spotify.services");
+const TokenService = require("../services/token.services");
+const UserService = require("../services/user.services");
 
 const login = (req, res) => {
   res.redirect(spotifyApi.createAuthorizeURL(scopes));

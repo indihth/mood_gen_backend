@@ -1,6 +1,6 @@
 const { getFirestoreDb } = require("../services/firebaseServices");
 const { spotifyApi, scopes } = require("../config/spotify.config");
-const TokenService = require("../services/token.service");
+const TokenService = require("../services/token.services");
 
 const isTokenExpired = (tokenData) => {
   if (!tokenData?.last_updated || !tokenData?.expires_in) {

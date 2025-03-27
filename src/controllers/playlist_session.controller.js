@@ -1,5 +1,5 @@
-const FirebaseService = require("../services/firebase.service");
-const SpotifyService = require("../services/spotify.service");
+const FirebaseService = require("../services/firebase.services");
+const SpotifyService = require("../services/spotify.services");
 const PlaylistSessionServices = require("../services/playlist_session.services");
 const session = require("express-session");
 
