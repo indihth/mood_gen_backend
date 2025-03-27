@@ -9,7 +9,8 @@ const login = (req, res) => {
 
 const callback = async (req, res) => {
   // Check if user is logged in
-  let userId = req.session.uid; // Hardcoded for testing, will be dynamic later
+  let userId = req.session.uid;
+  console.log("User ID:", userId);
 
   const error = req.query.error;
 

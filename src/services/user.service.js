@@ -6,25 +6,26 @@ const SpotifyService = require("./spotify.service");
 class UserService {
   // High-level business operations
   static async saveSpotifyToken(userId, accessTokenData) {
-    const userEmail = await FirebaseService.getUserEmail(userId);
-    // const tokenData = await {
-    //   ...accessTokenData, // accessToken, refreshToken, expiresIn
-    //   created_at: new Date(),
-    //   last_updated: new Date(),
-    // };
-
-    // Validate token format
-    // if (!this.isValidSpotifyToken(tokenData)) {
-    //   throw new Error("Invalid token format");
-    // }
+    // const userEmail = await FirebaseService.getUserEmail(userId);
 
     // Use FirebaseService for the actual database operation
     await FirebaseService.setDocument("users", userId, {
       spotify: accessTokenData,
       spotifyConnected: true,
-      email: userEmail,
+      // email: userEmail,
     });
   }
+
+  // const tokenData = await {
+  //   ...accessTokenData, // accessToken, refreshToken, expiresIn
+  //   created_at: new Date(),
+  //   last_updated: new Date(),
+  // };
+
+  // Validate token format
+  // if (!this.isValidSpotifyToken(tokenData)) {
+  //   throw new Error("Invalid token format");
+  // }
 
   static async updateSpotifyToken(req) {
     // CIRCULAR DEPENDENCY: This calls back to SpotifyService

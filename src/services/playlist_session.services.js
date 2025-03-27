@@ -132,6 +132,7 @@ class PlaylistSessionService {
         joinedAt: new Date(),
       },
     };
+    console.log("userData: ", userData);
 
     const historyData = {
       ...listeningHistory,

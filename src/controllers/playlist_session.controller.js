@@ -1,6 +1,7 @@
 const FirebaseService = require("../services/firebase.service");
 const SpotifyService = require("../services/spotify.service");
 const PlaylistSessionServices = require("../services/playlist_session.services");
+const session = require("express-session");
 
 class PlaylistSessionController {
   static async _mapTracksIds(tracks) {
@@ -26,12 +27,14 @@ class PlaylistSessionController {
       const { title, description } = req.body;
       const userId = req.session.uid;
 
+      // Get user data and listening history
       const { userData, historyData } =
         await PlaylistSessionServices.getUserDataAndHistory(userId, true);
 
       const sessionData = {
         sessionName: title,
         description,
+        hostId: userId,
         users: userData,
       };
 
@@ -44,23 +47,40 @@ class PlaylistSessionController {
 
       // TODO: integrate into _getUserDataAndHistory
       // Add listening history to user subcollection
-      const listeningHistoryDoc =
-        await FirebaseService.setDocumentInSubcollection(
-          "users",
-          userId,
-          "listeningHistory",
-          "topSongs",
-          historyData
-        );
-      console.log("listeningHistoryDoc: ", listeningHistoryDoc);
+      // const listeningHistoryDoc =
+      await FirebaseService.setDocumentInSubcollection(
+        "sessions",
+        sessionRef.id,
+        "listeningHistory",
+        userId,
+        historyData
+      );
+
+      // Add top songs to user subcollection - Need to update ListeningHistory method
+      // await FirebaseService.setDocumentInSubcollection(
+      //   "users",
+      //   userId,
+      //   "listeningHistory",
+      //   "topSongs",
+      //   historyData
+      // );
+
+      console.log("sessionRef.id: ", sessionRef.id);
+
+      const newSessionData = {
+        sessionId: sessionRef.id,
+        sessionName: title,
+        description,
+        hostDisplayName: userData[userId].displayName,
+      };
 
       return res.json({
         message: "Successfully created session",
-        session: sessionRef,
+        session: newSessionData,
       });
     } catch (error) {
-      res.status(500).json({ error: error.message });
       console.log("Error creating session:", error);
+      res.status(500).json({ error: error.message });
       throw new Error("Failed to create session", error);
     }
   }
@@ -99,9 +119,16 @@ class PlaylistSessionController {
         historyData
       );
 
+      const newSessionData = {
+        sessionName: sessionDoc.sessionName,
+        description: sessionDoc.description,
+        hostDisplayName: sessionDoc.hostId,
+      };
+
       return res.json({
         message: "Successfully joined session",
-        session: updatedSessionDoc,
+        session: newSessionData,
+        // session: updatedSessionDoc, // OLD
       });
     } catch (error) {
       console.error("Error joining session:", error);

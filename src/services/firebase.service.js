@@ -133,13 +133,12 @@ class FirebaseService {
   }
 
   static async getUserEmail(userId) {
-    // const userId = req.session.uid;
     try {
       const user = await admin.auth().getUser(userId);
       return user.email;
     } catch (error) {
       console.error("Error getting user email:", error);
-      return null; // or throw the error, depending on your error handling strategy
+      return null;
     }
   }
 }

@@ -1,5 +1,6 @@
 const express = require("express");
 const router = express.Router();
+const verifyFirebaseToken = require("../../middleware/auth.middleware");
 require("dotenv").config();
 const { uploadData } = require("../../services/firebaseServices");
 const { spotifyApi, scopes } = require("../../config/spotify.config");
