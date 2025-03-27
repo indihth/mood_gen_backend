@@ -94,15 +94,16 @@ class SpotifyService {
         throw new Error("No recent history found");
       }
 
-      const mappedData = data.body.items.map((track) => {
-        return {
-          trackId: track.id,
+      // Use .reduce instead of .map to flatten the array of objects
+      const mappedData = data.body.items.reduce((acc, track) => {
+        acc[track.id] = {
           artistName: track.artists[0].name,
           songName: track.name,
           albumName: track.album.name,
           albumArtworkUrl: track.album.images[0].url,
         };
-      });
+        return acc;
+      }, {});
 
       return mappedData;
       // res.json([...mappedData]);
