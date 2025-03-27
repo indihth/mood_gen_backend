@@ -1,6 +1,6 @@
 const admin = require("firebase-admin");
-const FirebaseService = require("./firebase.service");
-const SpotifyService = require("./spotify.service");
+const FirebaseService = require("./firebase.services");
+const SpotifyService = require("./spotify.services");
 const PlaylistSessionServices = require("./playlist_session.services");
 
 class PlaylistSessionService {
@@ -8,6 +8,22 @@ class PlaylistSessionService {
   static async createPlaylistSession() {
     // Create a new playlist session
     // Return the playlist session ID
+  }
+
+  // Get playlist session userIds
+  static async _getPlaylistSessionUsers(sessionId) {
+    // Get the playlist session document
+    const sessionDoc = await FirebaseService.getDocument("sessions", sessionId);
+    if (!sessionDoc) {
+      throw new Error("Session not found");
+    }
+
+    console.log("sessionDoc: ", sessionDoc);
+
+    // Extracts the values from the users object and returns an array of userIds
+    const userIds = Object.values(sessionDoc.users).map((user) => user.userId);
+
+    return userIds;
   }
 
   // Get all users listening history in a playlist session
@@ -56,6 +72,28 @@ class PlaylistSessionService {
     return shuffledTracks;
   }
 
+  static _addVotingToTracks(tracks, userIds) {
+    // Iterates over userIds array and adds fields with userId as key to track votes
+    const votedBy = userIds.reduce((acc, userId) => {
+      acc[userId] = {
+        upvoted: false,
+        downvoted: false,
+      };
+      return acc;
+    }, {});
+    console.log("votedBy: ", votedBy);
+
+    // Add voting to each track
+    return tracks.map((track) => {
+      return {
+        ...track,
+        upvotes: 0,
+        downvotes: 0,
+        votedBy,
+      };
+    });
+  }
+
   // Create base playlist
   static async _createTrackList(sessionId) {
     // Get the existing session data
@@ -66,9 +104,17 @@ class PlaylistSessionService {
     const listeningHistory = await this._getAllListeningHistory(sessionId);
     // console.log("listeningHistory1 : ", listeningHistory);
 
+    // Get userIds
+    const userIds = await this._getPlaylistSessionUsers(sessionId);
+    console.log("userIds: ", userIds);
+
+    // Add voting to tracks
+    const tracksWithVoting = this._addVotingToTracks(listeningHistory, userIds);
+    console.log("tracksWithVoting: ", tracksWithVoting);
+
     const trackListData = {
       sessionName: sessionDoc.sessionName,
-      tracks: listeningHistory,
+      tracks: tracksWithVoting,
     };
     console.log("trackListData: ", trackListData);
 
