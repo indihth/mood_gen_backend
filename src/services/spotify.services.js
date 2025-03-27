@@ -88,22 +88,31 @@ class SpotifyService {
       // const data = await spotifyApi.getMyRecentlyPlayedTracks({
       const data = await spotifyApi.getMyTopTracks({
         time_range: time_range,
+        limit: 20,
       });
 
       if (!data) {
         throw new Error("No recent history found");
       }
 
-      // Use .reduce instead of .map to flatten the array of objects
-      const mappedData = data.body.items.reduce((acc, track) => {
-        acc[track.id] = {
-          artistName: track.artists[0].name,
-          songName: track.name,
-          albumName: track.album.name,
-          albumArtworkUrl: track.album.images[0].url,
-        };
-        return acc;
-      }, {});
+      // // Use .reduce instead of .map to flatten the array of objects - not an object within an object
+      // const mappedData = data.body.items.reduce((acc, track) => {
+      //   acc[track.id] = {
+      //     artistName: track.artists[0].name,
+      //     songName: track.name,
+      //     albumName: track.album.name,
+      //     albumArtworkUrl: track.album.images[0].url,
+      //   };
+      //   return acc;
+      // }, {});
+
+      const mappedData = data.body.items.map((track) => ({
+        id: track.id,
+        artistName: track.artists[0].name,
+        songName: track.name,
+        albumName: track.album.name,
+        albumArtworkUrl: track.album.images[0].url,
+      }));
 
       return mappedData;
       // res.json([...mappedData]);

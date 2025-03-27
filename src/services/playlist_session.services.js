@@ -18,8 +18,6 @@ class PlaylistSessionService {
       throw new Error("Session not found");
     }
 
-    console.log("sessionDoc: ", sessionDoc);
-
     // Extracts the values from the users object and returns an array of userIds
     const userIds = Object.values(sessionDoc.users).map((user) => user.userId);
 
@@ -41,11 +39,27 @@ class PlaylistSessionService {
     // Flatten all listening histories into a single array
     let allTracks = [];
 
+    const combinedTracks = {};
+    const combinedTrackOrder = [];
+
     // Get the first 10 tracks from each user
     allTracks = listeningHistoryDocs.map((user) => ({
       id: user.id,
+      // tracks: user.tracks.slice(0, 10), // should work bc no longer object?
+      // tracks: user.tracks, // include all for now
       tracks: Object.values(user.tracks).slice(0, 10), // convert object to array
     }));
+
+    // Loop through each user's listening history and combine all unique tracks into a single array
+    // listeningHistoryDocs.forEach((user) => {
+    //   user.tracks.forEach((track) => {
+    //     if (!combinedTracks[track.trackId]) {
+    //       combinedTracks[track.trackId] = track; // Add unique track
+    //       combinedTrackOrder.push(track.trackId); // Maintain order
+    //     }
+    //   });
+    // });
+    // console.log("combinedTracks: ", combinedTracks);
 
     // Combine all tracks from each user into a single array
     const justTracks = allTracks.reduce((acc, user) => {
@@ -54,7 +68,6 @@ class PlaylistSessionService {
 
     // Shuffle the tracks
     const shuffledTracks = this._shuffleTracks(justTracks);
-    // TODO: filter out duplicates
 
     return shuffledTracks;
   }
@@ -110,13 +123,20 @@ class PlaylistSessionService {
 
     // Add voting to tracks
     const tracksWithVoting = this._addVotingToTracks(listeningHistory, userIds);
-    console.log("tracksWithVoting: ", tracksWithVoting);
+
+    // create flattened array of objects, .reduce instead of .map
+    const flattenedTracks = tracksWithVoting.reduce((acc, track) => {
+      acc[track.id] = {
+        ...track,
+      };
+      return acc;
+    }, {});
 
     const trackListData = {
-      sessionName: sessionDoc.sessionName,
-      tracks: tracksWithVoting,
+      title: sessionDoc.sessionName,
+      description: sessionDoc.description,
+      tracks: flattenedTracks,
     };
-    console.log("trackListData: ", trackListData);
 
     return trackListData;
   }

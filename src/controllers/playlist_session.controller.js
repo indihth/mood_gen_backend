@@ -174,7 +174,8 @@ class PlaylistSessionController {
 
       return res.json({
         message: "Successfully loaded playlist",
-        data: mappedData,
+        data: { playlistId: sessionDoc.playlist?.playlistId }, // frontend getting data from db, only needs id
+        // data: mappedData,
       });
     } catch (error) {
       // Handle specific error types
