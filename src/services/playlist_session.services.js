@@ -89,8 +89,8 @@ class PlaylistSessionService {
     // Iterates over userIds array and adds fields with userId as key to track votes
     const votedBy = userIds.reduce((acc, userId) => {
       acc[userId] = {
-        upvoted: false,
-        downvoted: false,
+        upVoted: false,
+        downVoted: false,
       };
       return acc;
     }, {});
@@ -100,8 +100,8 @@ class PlaylistSessionService {
     return tracks.map((track) => {
       return {
         ...track,
-        upvotes: 0,
-        downvotes: 0,
+        upVotes: 0,
+        downVotes: 0,
         votedBy,
       };
     });
@@ -147,11 +147,10 @@ class PlaylistSessionService {
       throw new Error("Session not found");
     }
 
-    const updatedSessionDoc = await FirebaseService.addToDocument(
+    const updatedSessionDoc = await FirebaseService.updateDocument(
       "sessions",
       sessionId,
-      { playlistId }, // Add playlist ID to session - make not nested in playlist object
-      "playlist"
+      { playlistId: playlistId }
     );
 
     return updatedSessionDoc;
