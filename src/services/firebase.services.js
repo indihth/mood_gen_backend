@@ -55,9 +55,15 @@ class FirebaseService {
   }
 
   static async updateDocument(collection, docId, data) {
-    return admin.firestore().collection(collection).doc(docId).update(data);
+    try {
+      const docRef = admin.firestore().collection(collection).doc(docId);
+      await docRef.update(data);
+      return true;
+    } catch (error) {
+      console.error("Error adding field to document:", error);
+      throw error;
+    }
   }
-
   static async addToDocument(collection, docId, data, field) {
     try {
       // run transaction - ensure read and write operations happen atomically
