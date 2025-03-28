@@ -27,8 +27,8 @@ class VotingServices {
     // Check if user has already voted
     if (hasVoted) {
       if (voteType === "up") {
-        // If already upvoted, throw error because no need to write to db again
-        throw new Error("Already upvoted");
+        // If already upvoted, remove downvote
+        return await this.removeUpvote(playlistId, trackId, userId);
       }
       // If downvoted, remove downvote first to avoid up and down votes both being true
       if (voteType === "down") {
@@ -46,6 +46,7 @@ class VotingServices {
     });
   }
 
+  // Handles the downvote logic - adding down vote or removing if user clicked again
   static async castDownvote(playlist, playlistId, trackId, userId) {
     const { hasVoted, voteType } = this.checkUserVote(
       playlist,
@@ -55,7 +56,9 @@ class VotingServices {
 
     if (hasVoted) {
       if (voteType === "down") {
-        throw new Error("Already downvoted");
+        // throw new Error("Already downvoted");
+        // If already downvoted, remove downvote
+        return await this.removeDownvote(playlistId, trackId, userId);
       }
       // If upvoted, remove upvote first
       if (voteType === "up") {
