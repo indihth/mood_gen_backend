@@ -223,9 +223,9 @@ class PlaylistSessionController {
         sessionDoc.playlist.playlistId
       );
 
-      // Get tracks from playlist data - map to Spotify track id format
-      const trackIds = playlistDoc.tracks.map(
-        (track) => `spotify:track:${track.trackId}`
+      // Get tracks from playlist data - convert object to array and use only the keys (ids)
+      const trackIds = Object.keys(playlistDoc.tracks).map(
+        (trackId) => `spotify:track:${trackId}`
       );
       // console.log("trackIds: ", trackIds);
 
