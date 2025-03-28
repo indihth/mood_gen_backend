@@ -94,7 +94,6 @@ class PlaylistSessionService {
       };
       return acc;
     }, {});
-    console.log("votedBy: ", votedBy);
 
     // Add voting to each track
     return tracks.map((track) => {
@@ -119,7 +118,6 @@ class PlaylistSessionService {
 
     // Get userIds
     const userIds = await this._getPlaylistSessionUsers(sessionId);
-    console.log("userIds: ", userIds);
 
     // Add voting to tracks
     const tracksWithVoting = this._addVotingToTracks(listeningHistory, userIds);
@@ -150,7 +148,7 @@ class PlaylistSessionService {
     const updatedSessionDoc = await FirebaseService.updateDocument(
       "sessions",
       sessionId,
-      { playlistId: playlistId }
+      { playlistId } // Store as top-level field
     );
 
     return updatedSessionDoc;
@@ -170,7 +168,7 @@ class PlaylistSessionService {
     // Add playlist ID to the session document
     await this._addPlaylistToSessionDoc(sessionId, addedPlaylistDoc.id);
 
-    return playlistData;
+    return addedPlaylistDoc;
   }
 
   static async getSessionUsers(sessionId) {

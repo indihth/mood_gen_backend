@@ -151,7 +151,7 @@ class PlaylistSessionController {
         return res.status(404).json({ error: "Session not found" });
       }
 
-      if (!sessionDoc.playlist?.playlistId) {
+      if (!sessionDoc.playlistId) {
         // if none, create new playlist and save to db
         playlistData = await PlaylistSessionServices.createNewPlaylist(
           sessionId
@@ -160,21 +160,15 @@ class PlaylistSessionController {
         // get from db
         playlistData = await FirebaseService.getDocument(
           "playlist",
-          sessionDoc.playlist.playlistId
+          sessionDoc.playlistId
         );
       }
 
-      // map playlist data to return selected fields
-      const mappedData = {
-        title: sessionDoc.sessionName,
-        description: sessionDoc.description,
-        playlistId: sessionDoc.playlist?.playlistId,
-        tracks: playlistData.tracks,
-      };
+      console.log("playlistData: ", playlistData.id);
 
       return res.json({
         message: "Successfully loaded playlist",
-        data: { playlistId: sessionDoc.playlist?.playlistId }, // frontend getting data from db, only needs id
+        data: { playlistId: playlistData.id }, // frontend getting data from db, only needs id
         // data: mappedData,
       });
     } catch (error) {
@@ -215,12 +209,12 @@ class PlaylistSessionController {
           .json({ error: "Session name and description are required" });
       }
 
-      console.log("sessionDoc.playlistId: ", sessionDoc.playlist.playlistId);
+      console.log("sessionDoc.playlistId: ", sessionDoc.playlistId);
 
       // Get playlist data from playlist collection
       const playlistDoc = await FirebaseService.getDocument(
         "playlist",
-        sessionDoc.playlist.playlistId
+        sessionDoc.playlistId
       );
 
       // Get tracks from playlist data - convert object to array and use only the keys (ids)
