@@ -58,7 +58,7 @@ router.post(
   "/:sessionId/vote",
   verifyFirebaseToken,
   spotifyAuthMiddleware,
-  VotingController.updateVote
+  VotingController.handleVote
 );
 
 module.exports = router;

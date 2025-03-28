@@ -159,12 +159,10 @@ class PlaylistSessionController {
       } else {
         // get from db
         playlistData = await FirebaseService.getDocument(
-          "playlist",
+          "playlists",
           sessionDoc.playlistId
         );
       }
-
-      console.log("playlistData: ", playlistData.id);
 
       return res.json({
         message: "Successfully loaded playlist",
@@ -213,7 +211,7 @@ class PlaylistSessionController {
 
       // Get playlist data from playlist collection
       const playlistDoc = await FirebaseService.getDocument(
-        "playlist",
+        "playlists",
         sessionDoc.playlistId
       );
 

@@ -160,7 +160,7 @@ class PlaylistSessionService {
 
     // Store playlist data in the playlist collection
     const addedPlaylistDoc = await FirebaseService.setDocument(
-      "playlist",
+      "playlists",
       "",
       playlistData
     );
@@ -204,11 +204,9 @@ class PlaylistSessionService {
     return { userData, historyData };
   }
 
-  // Add a song to a playlist session
+  // Handle voting on a song in a playlist session
 
   // Remove a song from a playlist session
-
-  // Handle voting on a song in a playlist session
 }
 
 module.exports = PlaylistSessionService;

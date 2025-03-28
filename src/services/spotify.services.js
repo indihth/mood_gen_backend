@@ -72,7 +72,6 @@ class SpotifyService {
         display_name: data.body.display_name,
         product: data.body.product, // premium or free account
       };
-      console.log("User profile: ", userProfile);
 
       return userProfile;
     } catch (error) {
@@ -83,7 +82,6 @@ class SpotifyService {
 
   static async getRecentHistory(time_range = "short_term") {
     // NEED TO FETCH ALL PAGINATED DATA
-    console.log("in createSession");
     try {
       // const data = await spotifyApi.getMyRecentlyPlayedTracks({
       const data = await spotifyApi.getMyTopTracks({
