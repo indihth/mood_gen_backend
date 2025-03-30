@@ -40,6 +40,13 @@ router.put(
   PlaylistSessionController.joinSession
 );
 
+router.put(
+  "/:sessionId/update-status",
+  verifyFirebaseToken,
+  spotifyAuthMiddleware,
+  PlaylistSessionController.updateSessionStatus
+);
+
 router.get(
   "/:sessionId/load-playlist",
   verifyFirebaseToken,
@@ -57,7 +64,6 @@ router.post(
 router.post(
   "/:sessionId/vote",
   verifyFirebaseToken,
-  spotifyAuthMiddleware,
   VotingController.handleVote
 );
 
