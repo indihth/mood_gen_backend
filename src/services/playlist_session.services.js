@@ -171,6 +171,28 @@ class PlaylistSessionService {
     return addedPlaylistDoc;
   }
 
+  // Remove downvoted tracks from the playlist
+  static async removeDownvotedTracks(playlistDoc) {
+    if (playlistDoc === null) {
+      throw new Error("Playlist not found");
+    }
+    // Store remaining songs
+    let votedTracks = {};
+
+    // Remove downvoted tracks from the playlist
+    Object.entries(playlistDoc.tracks).forEach(([trackId, track]) => {
+      // Calculate overall votes (upvotes - downvotes)
+      const totalVotes = track.upVotes - track.downVotes;
+
+      // If the track has more upvotes or equal votes, keep it in the playlist
+      if (totalVotes >= 0) {
+        votedTracks[trackId] = track;
+      }
+    });
+
+    return votedTracks;
+  }
+
   static async getSessionUsers(sessionId) {
     const sessionDoc = await FirebaseService.getDocument("sessions", sessionId);
     if (!sessionDoc) {
@@ -195,7 +217,6 @@ class PlaylistSessionService {
         joinedAt: new Date(),
       },
     };
-    console.log("userData: ", userData);
 
     const historyData = {
       ...listeningHistory,
@@ -203,10 +224,6 @@ class PlaylistSessionService {
 
     return { userData, historyData };
   }
-
-  // Handle voting on a song in a playlist session
-
-  // Remove a song from a playlist session
 }
 
 module.exports = PlaylistSessionService;
