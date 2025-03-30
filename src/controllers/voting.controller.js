@@ -32,17 +32,26 @@ class VotingController {
       // Check what vote type
       if (voteType === "up") {
         // Upvote track
-        await VotingServices.castUpvote(playlist, playlistId, trackId, userId);
-        return res.status(200).json({ message: "Upvote successful" });
-      } else if (voteType === "down") {
-        // Downvote track
-        await VotingServices.castDownvote(
+        const vote = await VotingServices.castUpvote(
           playlist,
           playlistId,
           trackId,
           userId
         );
-        return res.status(200).json({ message: "Downvote successful" });
+        return res
+          .status(200)
+          .json({ message: "Upvote successful", data: vote });
+      } else if (voteType === "down") {
+        // Downvote track
+        const vote = await VotingServices.castDownvote(
+          playlist,
+          playlistId,
+          trackId,
+          userId
+        );
+        return res
+          .status(200)
+          .json({ message: "Downvote successful", data: vote });
       } else {
         return res.status(400).json({ error: "Invalid vote type" });
       }
