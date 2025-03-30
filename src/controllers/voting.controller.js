@@ -13,7 +13,6 @@ class VotingController {
       }
       // Get userId from session
       const userId = req.session.uid;
-      console.log("userId : ", userId);
 
       // Validate input
       if (!playlistId || !trackId || !voteType) {

@@ -36,8 +36,6 @@ class VotingServices {
       }
     }
 
-    console.log("playlistId: ", playlist);
-
     // Update track votes - dot notation to update nested fields
     return await FirebaseService.updateDocument("playlists", playlistId, {
       [`tracks.${trackId}.upVotes`]: admin.firestore.FieldValue.increment(1), // Increment general upvote count
