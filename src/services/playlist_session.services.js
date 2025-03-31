@@ -24,6 +24,48 @@ class PlaylistSessionService {
     return userIds;
   }
 
+  static async _getListeningHistoryByUserId(sessionId, userId) {
+    // Get the listening history document for the user
+    const listeningHistoryDoc = await FirebaseService.getSubcollectionDocument(
+      "sessions",
+      sessionId,
+      "listeningHistory",
+      userId
+    );
+    if (!listeningHistoryDoc) {
+      throw new Error("Listening history document not found for user");
+    }
+    // Get the listening history for the user
+    const listeningHistory = listeningHistoryDoc.tracks;
+    if (!listeningHistory) {
+      throw new Error("No listening history tracks found for user");
+    }
+
+    // Convert the listening history object to an array of tracks
+    const tracks = Object.values(listeningHistory).slice(0, 10); // Get the first 10 tracks
+    // const tracks = Object.values(listeningHistory); // Get all tracks
+
+    // Shuffle the tracks
+    const shuffledTracks = this._shuffleTracks(tracks);
+
+    // Add voting to tracks
+    const tracksWithVoting = this._addVotingToTracks(
+      [shuffledTracks],
+      [userId]
+    );
+
+    // Flatten the tracks array
+    const flattenedTracks = tracksWithVoting.reduce((acc, track) => {
+      acc[track.id] = {
+        ...track,
+      };
+      return acc;
+    }, {});
+
+    // console.log("flattenedTracks : ", flattenedTracks);
+    return flattenedTracks;
+  }
+
   // Get all users listening history in a playlist session
   static async _getAllListeningHistory(sessionId) {
     const listeningHistoryDocs = await FirebaseService.getSubcollection(
@@ -49,17 +91,6 @@ class PlaylistSessionService {
       // tracks: user.tracks, // include all for now
       tracks: Object.values(user.tracks).slice(0, 10), // convert object to array
     }));
-
-    // Loop through each user's listening history and combine all unique tracks into a single array
-    // listeningHistoryDocs.forEach((user) => {
-    //   user.tracks.forEach((track) => {
-    //     if (!combinedTracks[track.trackId]) {
-    //       combinedTracks[track.trackId] = track; // Add unique track
-    //       combinedTrackOrder.push(track.trackId); // Maintain order
-    //     }
-    //   });
-    // });
-    // console.log("combinedTracks: ", combinedTracks);
 
     // Combine all tracks from each user into a single array
     const justTracks = allTracks.reduce((acc, user) => {
