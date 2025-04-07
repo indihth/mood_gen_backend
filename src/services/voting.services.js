@@ -24,27 +24,26 @@ class VotingServices {
       userId
     );
 
-    // Check if user has already voted
+    // Has user already voted?
     if (hasVoted) {
       if (voteType === "up") {
-        // If already upvoted, remove downvote
+        // if already upvoted, remove downvote
         return await this.removeUpvote(playlistId, trackId, userId);
       }
-      // If downvoted, remove downvote first to avoid up and down votes both being true
+      // if downvoted, remove downvote first to avoid up and down votes both being true
       if (voteType === "down") {
         await this.removeDownvote(playlistId, trackId, userId);
       }
     }
 
-    // Update track votes - dot notation to update nested fields
+    // Update track votes in db, dot notation to update nested fields
     return await FirebaseService.updateDocument("playlists", playlistId, {
-      [`tracks.${trackId}.upVotes`]: admin.firestore.FieldValue.increment(1), // Increment general upvote count
-      [`tracks.${trackId}.votedBy.${userId}.upVoted`]: true, // Set user upvote to true
-      [`tracks.${trackId}.votedBy.${userId}.downVoted`]: false, // Set user downvote to false
+      [`tracks.${trackId}.upVotes`]: admin.firestore.FieldValue.increment(1), // increment upvote count
+      [`tracks.${trackId}.votedBy.${userId}.upVoted`]: true, // set user upvote to true
+      [`tracks.${trackId}.votedBy.${userId}.downVoted`]: false, // set user downvote to false
     });
   }
 
-  // Handles the downvote logic - adding down vote or removing if user clicked again
   static async castDownvote(playlist, playlistId, trackId, userId) {
     const { hasVoted, voteType } = this.checkUserVote(
       playlist,
@@ -71,7 +70,8 @@ class VotingServices {
     });
   }
 
-  // Deals with removing only upvote
+  // Remove up/down votes from tracks
+
   static async removeUpvote(playlistId, trackId, userId) {
     await FirebaseService.updateDocument("playlists", playlistId, {
       [`tracks.${trackId}.upVotes`]: admin.firestore.FieldValue.increment(-1),
@@ -79,15 +79,12 @@ class VotingServices {
     });
   }
 
-  // Deals with removing only downvote
   static async removeDownvote(playlistId, trackId, userId) {
     await FirebaseService.updateDocument("playlists", playlistId, {
       [`tracks.${trackId}.downVotes`]: admin.firestore.FieldValue.increment(-1),
       [`tracks.${trackId}.votedBy.${userId}.downVoted`]: false,
     });
   }
-
-  // Remove track from playlist
 }
 
 module.exports = VotingServices;

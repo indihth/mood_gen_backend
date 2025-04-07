@@ -8,12 +8,12 @@ const isTokenExpired = (tokenData) => {
     return true;
   }
 
-  // Convert Firestore timestamp to milliseconds
+  // convert Firestore timestamp to milliseconds
   const lastUpdated = tokenData.last_updated._seconds * 1000;
   const now = Date.now();
   const expiryTime = lastUpdated + tokenData.expires_in * 1000;
 
-  // If token expires in less than 5 minutes, refresh early to avoid bad requests
+  // if token expires in less than 5 minutes, refresh early to avoid bad requests
   return now >= expiryTime - 300000; // 5 minutes buffer
 };
 
@@ -21,7 +21,7 @@ const spotifyAuthMiddleware = async (req, res, next) => {
   const userId = req.session.uid;
 
   try {
-    const db = getFirestoreDb(); // Ensures Firebase is initialized first
+    const db = getFirestoreDb(); // ensure Firebase is initialized first
 
     if (!db) {
       // if Firebase db isn't initialized yet, initialize it
@@ -37,11 +37,11 @@ const spotifyAuthMiddleware = async (req, res, next) => {
     }
 
     const result = await TokenService.getSpotifyTokenData(userId); // get the token data from Firestore
-    // console.log("Spotify Token Data:", result);
+
     if (!result || result.error) {
       if (result.requiresAuth) {
         // if the error is because user has no token, redirect to Spotify auth?
-        // No, user shouldn't get this far without an access token, show error
+        // no, user shouldn't get this far without an access token, show error
         console.log(
           "User has no Spotify token, user needs to authorise Spotify..."
         );
@@ -49,7 +49,6 @@ const spotifyAuthMiddleware = async (req, res, next) => {
           error: "User needs to authorise Spotify",
           requiresAuth: true,
         });
-        // return res.redirect(spotifyApi.createAuthorizeURL(scopes));
       }
       return res.status(401).json({ error: result.message });
     }

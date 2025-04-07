@@ -27,7 +27,7 @@ class SpotifyService {
     const userId = req.session.uid; // Hardcoded for now, will be dynamic later
     try {
       if (!spotifyApi.getRefreshToken()) {
-        // CIRCULAR DEPENDENCY: This calls back to UserService
+        // CIRCULAR DEPENDENCY: This calls back to UserService - fixed I think?
         const tokenData = await UserService.getSpotifyTokenData(userId);
         const refreshToken = tokenData.data.refresh_token;
         spotifyApi.setRefreshToken(refreshToken);

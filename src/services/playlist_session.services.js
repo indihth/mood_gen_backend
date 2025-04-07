@@ -25,7 +25,6 @@ class PlaylistSessionService {
   }
 
   static async _getListeningHistoryByUserId(sessionId, userId) {
-    // Get the listening history document for the user
     const listeningHistoryDoc = await FirebaseService.getSubcollectionDocument(
       "sessions",
       sessionId,
@@ -35,26 +34,26 @@ class PlaylistSessionService {
     if (!listeningHistoryDoc) {
       throw new Error("Listening history document not found for user");
     }
-    // Get the listening history for the user
+    // get the listening history for the user
     const listeningHistory = listeningHistoryDoc.tracks;
     if (!listeningHistory) {
       throw new Error("No listening history tracks found for user");
     }
 
-    // Convert the listening history object to an array of tracks
+    // convert the listening history object to an array of tracks
     const tracks = Object.values(listeningHistory).slice(0, 10); // Get the first 10 tracks
     // const tracks = Object.values(listeningHistory); // Get all tracks
 
-    // Shuffle the tracks
+    // shuffle the tracks
     const shuffledTracks = this._shuffleTracks(tracks);
 
-    // Add voting to tracks
+    // add voting fields to tracks
     const tracksWithVoting = this._addVotingToTracks(
       [shuffledTracks],
       [userId]
     );
 
-    // Flatten the tracks array
+    // flatten the tracks array
     const flattenedTracks = tracksWithVoting.reduce((acc, track) => {
       acc[track.id] = {
         ...track,
@@ -62,11 +61,10 @@ class PlaylistSessionService {
       return acc;
     }, {});
 
-    // console.log("flattenedTracks : ", flattenedTracks);
     return flattenedTracks;
   }
 
-  // Get all users listening history in a playlist session
+  // get all users listening history from a playlist session
   static async _getAllListeningHistory(sessionId) {
     const listeningHistoryDocs = await FirebaseService.getSubcollection(
       "sessions",
@@ -78,26 +76,23 @@ class PlaylistSessionService {
       throw new Error("No listening history found");
     }
 
-    // Flatten all listening histories into a single array
     let allTracks = [];
 
     const combinedTracks = {};
     const combinedTrackOrder = [];
 
-    // Get the first 10 tracks from each user
     allTracks = listeningHistoryDocs.map((user) => ({
       id: user.id,
       // tracks: user.tracks.slice(0, 10), // should work bc no longer object?
       // tracks: user.tracks, // include all for now
-      tracks: Object.values(user.tracks).slice(0, 10), // convert object to array
+      tracks: Object.values(user.tracks).slice(0, 10), // convert object to array, get first 10 tracks
     }));
 
-    // Combine all tracks from each user into a single array
+    // combine all tracks from each user into a single array
     const justTracks = allTracks.reduce((acc, user) => {
       return acc.concat(user.tracks).splice(0, 20);
     }, []);
 
-    // Shuffle the tracks
     const shuffledTracks = this._shuffleTracks(justTracks);
 
     return shuffledTracks;
@@ -117,7 +112,7 @@ class PlaylistSessionService {
   }
 
   static _addVotingToTracks(tracks, userIds) {
-    // Iterates over userIds array and adds fields with userId as key to track votes
+    // iterate over userIds array and adds fields with userId as key to track votes
     const votedBy = userIds.reduce((acc, userId) => {
       acc[userId] = {
         upVoted: false,
@@ -126,7 +121,7 @@ class PlaylistSessionService {
       return acc;
     }, {});
 
-    // Add voting to each track
+    // add voting fields to each track
     return tracks.map((track) => {
       return {
         ...track,
@@ -139,18 +134,15 @@ class PlaylistSessionService {
 
   // Create base playlist
   static async _createTrackList(sessionId) {
-    // Get the existing session data
     const sessionDoc = await FirebaseService.getDocument("sessions", sessionId);
     if (!sessionDoc) {
       throw new Error("Session not found");
     }
     const listeningHistory = await this._getAllListeningHistory(sessionId);
-    // console.log("listeningHistory1 : ", listeningHistory);
 
-    // Get userIds
     const userIds = await this._getPlaylistSessionUsers(sessionId);
 
-    // Add voting to tracks
+    // add voting to tracks
     const tracksWithVoting = this._addVotingToTracks(listeningHistory, userIds);
 
     // create flattened array of objects, .reduce instead of .map
