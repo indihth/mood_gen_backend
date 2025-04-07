@@ -41,6 +41,13 @@ router.put(
 );
 
 router.put(
+  "/:sessionId/updatePlaylist",
+  verifyFirebaseToken,
+  spotifyAuthMiddleware,
+  PlaylistSessionController.updatePlaylist
+);
+
+router.put(
   "/:sessionId/update-status",
   verifyFirebaseToken,
   spotifyAuthMiddleware,
