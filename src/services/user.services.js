@@ -1,6 +1,6 @@
 // src/services/user.service.js
 const FirebaseService = require("./firebase.services");
-const PlaylistSessionService = require("./playlist_session.services");
+
 // CIRCULAR DEPENDENCY WARNING: Importing SpotifyService while it imports UserService
 const SpotifyService = require("./spotify.services");
 
@@ -27,14 +27,8 @@ class UserService {
     const tracks = Object.values(listeningHistory).slice(0, 10); // Get the first 10 tracks
     // const tracks = Object.values(listeningHistory); // Get all tracks
 
-    // shuffle the tracks
-    const shuffledTracks = PlaylistSessionService.shuffleTracks(tracks);
-
     // add voting fields to tracks
-    const tracksWithVoting = this._addVotingToTracks(
-      [shuffledTracks],
-      [userId]
-    );
+    const tracksWithVoting = this._addVotingToTracks([tracks], [userId]);
 
     // flatten the tracks array
     const flattenedTracks = tracksWithVoting.reduce((acc, track) => {

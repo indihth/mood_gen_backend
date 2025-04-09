@@ -158,7 +158,7 @@ class PlaylistSessionController {
 
       if (!sessionDoc.playlistId || sessionDoc.playlistId === undefined) {
         // if none, create new playlist and save to db
-        console.log("Creating new playlist... was undefined");
+        console.log("Creating new playlist... didn't exist");
         playlistData = await PlaylistSessionServices.createNewPlaylist(
           sessionId
         );
@@ -200,56 +200,28 @@ class PlaylistSessionController {
   static async updatePlaylist(req, res) {
     try {
       const { sessionId } = req.params;
-      let playlistData;
+      const userId = req.session.uid; // Get user ID from session
 
-      const sessionDoc = await FirebaseService.getDocument(
-        "sessions",
-        sessionId
-      );
-
-      if (!sessionDoc) {
-        return res.status(404).json({ error: "Session not found" });
-      }
-
-      // Check if the session has a playlistId
-      if (!sessionDoc.playlistId || sessionDoc.playlistId === undefined) {
-        console.log("Playlist... was undefined");
-        throw new Error("PlaylistId not found");
-      } else {
-        // Get the playlist data
-        playlistData = await FirebaseService.getDocument(
-          "playlists",
-          sessionDoc.playlistId
+      // Call the service method to update the playlist
+      const updatedPlaylistDoc =
+        await PlaylistSessionServices.updatePlaylistWithUserHistory(
+          sessionId,
+          userId
         );
-        if (!playlistData) {
-          throw new Error("Playlist document not found");
-        }
-      }
-
-      // Get and process listening history of user
-      const listeningHistory = await UserService.getListeningHistoryByUserId(
-        sessionDoc.playlistId,
-        sessionDoc.userId
-      );
-
-      // Add new tracks to the playlist (just added to map for now, no sorting)
-      const updatedTracks = { ...listeningHistory, ...playlistDoc.tracks };
-      console.log("updatedTracks : ", updatedTracks);
-
-      // Update the playlist document in Firestore
-      const updatedPlaylistDoc = await FirebaseService.updateDocument(
-        "playlists",
-        sessionDoc.playlistId,
-        { tracks: updatedTracks }
-      );
 
       return res.json({
         message: "Successfully updated session playlist with new user data",
         data: updatedPlaylistDoc,
       });
     } catch (error) {
-      console.error("Error updating session:", error);
-      res.status(500).json({ error: error.message });
+      console.error("Error updating playlist:", error);
+
+      // Handle specific error types
+      if (error.message.includes("not found")) {
+        return res.status(404).json({ error: error.message });
+      }
+
+      return res.status(500).json({ error: error.message });
     }
   }
 

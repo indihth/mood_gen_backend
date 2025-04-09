@@ -1,7 +1,4 @@
-const admin = require("firebase-admin");
 const FirebaseService = require("./firebase.services");
-const SpotifyService = require("./spotify.services");
-const PlaylistSessionServices = require("./playlist_session.services");
 const UserService = require("./user.services");
 
 class PlaylistSessionService {
@@ -62,7 +59,7 @@ class PlaylistSessionService {
     const tracks = await UserService.getAllListeningHistory(sessionId);
 
     // shuffle the tracks
-    const shuffledTracks = PlaylistSessionService._shuffleTracks(tracks);
+    const shuffledTracks = this._shuffleTracks(tracks);
 
     const userIds = await this._getPlaylistSessionUsers(sessionId);
 
@@ -193,6 +190,75 @@ class PlaylistSessionService {
     } catch (error) {
       console.error("Error adding user to session:", error);
       throw new Error(`Failed to add user to session: ${error.message}`);
+    }
+  }
+
+  // Update playlist with new tracks from a user's listening history
+  static async updatePlaylistWithUserHistory(sessionId, userId) {
+    try {
+      const sessionDoc = await FirebaseService.getDocument(
+        "sessions",
+        sessionId
+      );
+      if (!sessionDoc) {
+        throw new Error("Session not found");
+      }
+
+      // Check if the session has a playlistId
+      if (!sessionDoc.playlistId) {
+        throw new Error("PlaylistId not found");
+      }
+
+      // Get the playlist data
+      const playlistData = await FirebaseService.getDocument(
+        "playlists",
+        sessionDoc.playlistId
+      );
+
+      if (!playlistData) {
+        throw new Error("Playlist document not found");
+      }
+
+      // Get and process listening history of user
+      const listeningHistory = await UserService.getListeningHistoryByUserId(
+        sessionId,
+        userId
+      );
+
+      if (!listeningHistory || Object.keys(listeningHistory).length === 0) {
+        throw new Error("No listening history found for user");
+      }
+
+      // Shuffle the new tracks
+      const tracks = Object.values(listeningHistory);
+      const shuffledTracks = this._shuffleTracks(tracks);
+
+      // Get existing user IDs to setup voting
+      const userIds = await this._getPlaylistSessionUsers(sessionId);
+
+      // Add voting structure to new tracks
+      const tracksWithVoting = this._addVotingToTracks(shuffledTracks, userIds);
+
+      // Convert to flat object structure with track ID as key
+      const newTracksMap = tracksWithVoting.reduce((acc, track) => {
+        acc[track.id] = track;
+        return acc;
+      }, {});
+
+      // Merge with existing tracks, new tracks will overwrite if same ID
+      const updatedTracks = { ...playlistData.tracks, ...newTracksMap };
+
+      // Update the playlist document in Firestore
+      const updatedPlaylistDoc = await FirebaseService.updateDocument(
+        "playlists",
+        sessionDoc.playlistId,
+        { tracks: updatedTracks }
+      );
+
+      return updatedPlaylistDoc;
+    } catch (error) {
+      console.error("Error updating playlist:", error);
+      throw new Error(`Failed to update playlist: ${error.message}`);
     }
   }
 }
