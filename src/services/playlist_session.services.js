@@ -2,14 +2,9 @@ const admin = require("firebase-admin");
 const FirebaseService = require("./firebase.services");
 const SpotifyService = require("./spotify.services");
 const PlaylistSessionServices = require("./playlist_session.services");
+const UserService = require("./user.services");
 
 class PlaylistSessionService {
-  // Create a new playlist session
-  static async createPlaylistSession() {
-    // Create a new playlist session
-    // Return the playlist session ID
-  }
-
   // Get playlist session userIds
   static async _getPlaylistSessionUsers(sessionId) {
     // Get the playlist session document
@@ -22,80 +17,6 @@ class PlaylistSessionService {
     const userIds = Object.values(sessionDoc.users).map((user) => user.userId);
 
     return userIds;
-  }
-
-  static async _getListeningHistoryByUserId(sessionId, userId) {
-    const listeningHistoryDoc = await FirebaseService.getSubcollectionDocument(
-      "sessions",
-      sessionId,
-      "listeningHistory",
-      userId
-    );
-    if (!listeningHistoryDoc) {
-      throw new Error("Listening history document not found for user");
-    }
-    // get the listening history for the user
-    const listeningHistory = listeningHistoryDoc.tracks;
-    if (!listeningHistory) {
-      throw new Error("No listening history tracks found for user");
-    }
-
-    // convert the listening history object to an array of tracks
-    const tracks = Object.values(listeningHistory).slice(0, 10); // Get the first 10 tracks
-    // const tracks = Object.values(listeningHistory); // Get all tracks
-
-    // shuffle the tracks
-    const shuffledTracks = this._shuffleTracks(tracks);
-
-    // add voting fields to tracks
-    const tracksWithVoting = this._addVotingToTracks(
-      [shuffledTracks],
-      [userId]
-    );
-
-    // flatten the tracks array
-    const flattenedTracks = tracksWithVoting.reduce((acc, track) => {
-      acc[track.id] = {
-        ...track,
-      };
-      return acc;
-    }, {});
-
-    return flattenedTracks;
-  }
-
-  // get all users listening history from a playlist session
-  static async _getAllListeningHistory(sessionId) {
-    const listeningHistoryDocs = await FirebaseService.getSubcollection(
-      "sessions",
-      sessionId,
-      "listeningHistory"
-    );
-
-    if (!listeningHistoryDocs || listeningHistoryDocs.length === 0) {
-      throw new Error("No listening history found");
-    }
-
-    let allTracks = [];
-
-    const combinedTracks = {};
-    const combinedTrackOrder = [];
-
-    allTracks = listeningHistoryDocs.map((user) => ({
-      id: user.id,
-      // tracks: user.tracks.slice(0, 10), // should work bc no longer object?
-      // tracks: user.tracks, // include all for now
-      tracks: Object.values(user.tracks).slice(0, 10), // convert object to array, get first 10 tracks
-    }));
-
-    // combine all tracks from each user into a single array
-    const justTracks = allTracks.reduce((acc, user) => {
-      return acc.concat(user.tracks).splice(0, 20);
-    }, []);
-
-    const shuffledTracks = this._shuffleTracks(justTracks);
-
-    return shuffledTracks;
   }
 
   static _shuffleTracks(tracks) {
@@ -138,12 +59,15 @@ class PlaylistSessionService {
     if (!sessionDoc) {
       throw new Error("Session not found");
     }
-    const listeningHistory = await this._getAllListeningHistory(sessionId);
+    const tracks = await UserService.getAllListeningHistory(sessionId);
+
+    // shuffle the tracks
+    const shuffledTracks = PlaylistSessionService._shuffleTracks(tracks);
 
     const userIds = await this._getPlaylistSessionUsers(sessionId);
 
     // add voting to tracks
-    const tracksWithVoting = this._addVotingToTracks(listeningHistory, userIds);
+    const tracksWithVoting = this._addVotingToTracks(shuffledTracks, userIds);
 
     // create flattened array of objects, .reduce instead of .map
     const flattenedTracks = tracksWithVoting.reduce((acc, track) => {
@@ -225,27 +149,51 @@ class PlaylistSessionService {
     return sessionDoc;
   }
 
-  static async getUserDataAndHistory(userId, isAdmin = false) {
-    const [listeningHistory, userProfile] = await Promise.all([
-      SpotifyService.getRecentHistory(),
-      SpotifyService.getUserProfile(),
-    ]);
-
-    const userData = {
-      [userId]: {
+  // add user (host or guest) to session with their listening history
+  static async addUserToSession(sessionId, userId, isHost = false) {
+    try {
+      // get user data and listening history
+      const { userData, historyData } = await UserService.getUserDataAndHistory(
         userId,
-        displayName: userProfile.display_name,
-        product: userProfile.product,
-        isAdmin,
-        joinedAt: new Date(),
-      },
-    };
+        isHost
+      );
 
-    const historyData = {
-      ...listeningHistory,
-    };
+      // update the session document
+      await FirebaseService.addToDocument(
+        "sessions",
+        sessionId,
+        userData,
+        "users"
+      );
 
-    return { userData, historyData };
+      // add listening history to the session subcollection
+      await FirebaseService.setDocumentInSubcollection(
+        "sessions",
+        sessionId,
+        "listeningHistory",
+        userId,
+        historyData
+      );
+
+      // get updated session data
+      const sessionDoc = await FirebaseService.getDocument(
+        "sessions",
+        sessionId
+      );
+
+      return {
+        userData,
+        sessionData: {
+          sessionName: sessionDoc.sessionName,
+          description: sessionDoc.description,
+          hostDisplayName:
+            sessionDoc.users[sessionDoc.hostId]?.displayName || "Unknown Host",
+        },
+      };
+    } catch (error) {
+      console.error("Error adding user to session:", error);
+      throw new Error(`Failed to add user to session: ${error.message}`);
+    }
   }
 }
 

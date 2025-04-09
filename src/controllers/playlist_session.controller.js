@@ -2,6 +2,7 @@ const FirebaseService = require("../services/firebase.services");
 const SpotifyService = require("../services/spotify.services");
 const PlaylistSessionServices = require("../services/playlist_session.services");
 const session = require("express-session");
+const UserService = require("../services/user.services");
 
 class PlaylistSessionController {
   static async _mapTracksIds(tracks) {
@@ -28,38 +29,33 @@ class PlaylistSessionController {
       const { title, description } = req.body;
       const userId = req.session.uid;
 
-      // Get user data and listening history
-      const { userData, historyData } =
-        await PlaylistSessionServices.getUserDataAndHistory(userId, true);
-
+      // first create the session document
       const sessionData = {
         status: "waiting", // starts as 'waiting', can be 'active' or 'ended'
         sessionName: title,
         description,
         hostId: userId,
-        users: userData,
+        users: {}, // empty initially, filled when a user is added
       };
 
-      // Create main session document
+      // create the session document
       const sessionRef = await FirebaseService.setDocument(
         "sessions",
         "",
         sessionData
       );
 
-      // TODO: integrate into _getUserDataAndHistory
-      await FirebaseService.setDocumentInSubcollection(
-        "sessions",
-        sessionRef.id,
-        "listeningHistory",
+      const sessionId = sessionRef.id;
+
+      // add user to playlist session - extract user and updatedSession data from response
+      const { userData } = await PlaylistSessionServices.addUserToSession(
+        sessionId,
         userId,
-        historyData
+        true // set user as host
       );
 
-      console.log("sessionRef.id: ", sessionRef.id);
-
       const newSessionData = {
-        sessionId: sessionRef.id,
+        sessionId,
         status: "waiting",
         sessionName: title,
         description,
@@ -83,45 +79,26 @@ class PlaylistSessionController {
       const { sessionId } = req.params;
       const userId = req.session.uid;
 
+      // Check if session exists
       const sessionDoc = await FirebaseService.getDocument(
         "sessions",
         sessionId
       );
+
       if (!sessionDoc) {
         return res.status(404).json({ error: "Session not found" });
       }
 
-      const { userData, historyData } =
-        await PlaylistSessionServices.getUserDataAndHistory(userId, false);
-
-      // Update the session document
-      const updatedSessionDoc = await FirebaseService.addToDocument(
-        "sessions",
+      // add user to playlist session
+      const { sessionData } = await PlaylistSessionServices.addUserToSession(
         sessionId,
-        userData,
-        "users"
-      );
-
-      // TODO: integrate into _getUserDataAndHistory
-      // Add listening history to the session subcollection
-      await FirebaseService.setDocumentInSubcollection(
-        "sessions",
-        sessionId,
-        "listeningHistory",
         userId,
-        historyData
+        false // User is not host
       );
-
-      const newSessionData = {
-        sessionName: sessionDoc.sessionName,
-        description: sessionDoc.description,
-        hostDisplayName: sessionDoc.users[sessionDoc.hostId].displayName,
-      };
 
       return res.json({
         message: "Successfully joined session",
-        session: newSessionData,
-        // session: updatedSessionDoc, // OLD
+        session: sessionData,
       });
     } catch (error) {
       console.error("Error joining session:", error);
@@ -225,7 +202,6 @@ class PlaylistSessionController {
       const { sessionId } = req.params;
       let playlistData;
 
-      // Integrate new user listening history to playlist
       const sessionDoc = await FirebaseService.getDocument(
         "sessions",
         sessionId
@@ -251,7 +227,7 @@ class PlaylistSessionController {
       }
 
       // Get and process listening history of user
-      const listeningHistory = await this._getListeningHistoryByUserId(
+      const listeningHistory = await UserService.getListeningHistoryByUserId(
         sessionDoc.playlistId,
         sessionDoc.userId
       );
