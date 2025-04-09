@@ -4,11 +4,11 @@ const router = express.Router();
 const verifyFirebaseToken = require("../../middleware/auth.middleware");
 const spotifyAuthMiddleware = require("../../middleware/spotifyAuth.middleware");
 const sessionMiddleware = require("../../middleware/session.middleware");
-const SpotifyService = require("../../services/spotify.service");
-const UserService = require("../../services/user.service");
+const SpotifyService = require("../../services/spotify.services");
+const UserService = require("../../services/user.services");
 const { spotifyApi, scopes } = require("../../config/spotify.config");
 const SpotifyController = require("../../controllers/spotify.controller");
-const TokenService = require("../../services/token.service");
+const TokenService = require("../../services/token.services");
 
 // initial point for users to authenticate
 router.get("/login", verifyFirebaseToken, SpotifyController.login);

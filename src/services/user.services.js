@@ -1,7 +1,7 @@
 // src/services/user.service.js
-const FirebaseService = require("./firebase.service");
+const FirebaseService = require("./firebase.services");
 // CIRCULAR DEPENDENCY WARNING: Importing SpotifyService while it imports UserService
-const SpotifyService = require("./spotify.service");
+const SpotifyService = require("./spotify.services");
 
 class UserService {
   // High-level business operations

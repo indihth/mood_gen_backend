@@ -1,6 +1,6 @@
 const { spotifyApi } = require("../config/spotify.config");
 // CIRCULAR DEPENDENCY WARNING: Importing UserService while it imports SpotifyService
-const UserService = require("./user.service");
+const UserService = require("./user.services");
 
 class SpotifyService {
   static async getAccessToken(code) {
@@ -27,7 +27,7 @@ class SpotifyService {
     const userId = req.session.uid; // Hardcoded for now, will be dynamic later
     try {
       if (!spotifyApi.getRefreshToken()) {
-        // CIRCULAR DEPENDENCY: This calls back to UserService
+        // CIRCULAR DEPENDENCY: This calls back to UserService - fixed I think?
         const tokenData = await UserService.getSpotifyTokenData(userId);
         const refreshToken = tokenData.data.refresh_token;
         spotifyApi.setRefreshToken(refreshToken);
@@ -72,7 +72,6 @@ class SpotifyService {
         display_name: data.body.display_name,
         product: data.body.product, // premium or free account
       };
-      console.log("User profile: ", userProfile);
 
       return userProfile;
     } catch (error) {
@@ -83,26 +82,35 @@ class SpotifyService {
 
   static async getRecentHistory(time_range = "short_term") {
     // NEED TO FETCH ALL PAGINATED DATA
-    console.log("in createSession");
     try {
       // const data = await spotifyApi.getMyRecentlyPlayedTracks({
       const data = await spotifyApi.getMyTopTracks({
         time_range: time_range,
+        limit: 20,
       });
 
       if (!data) {
         throw new Error("No recent history found");
       }
 
-      const mappedData = data.body.items.map((track) => {
-        return {
-          trackId: track.id,
-          artistName: track.artists[0].name,
-          songName: track.name,
-          albumName: track.album.name,
-          albumArtworkUrl: track.album.images[0].url,
-        };
-      });
+      // // Use .reduce instead of .map to flatten the array of objects - not an object within an object
+      // const mappedData = data.body.items.reduce((acc, track) => {
+      //   acc[track.id] = {
+      //     artistName: track.artists[0].name,
+      //     songName: track.name,
+      //     albumName: track.album.name,
+      //     albumArtworkUrl: track.album.images[0].url,
+      //   };
+      //   return acc;
+      // }, {});
+
+      const mappedData = data.body.items.map((track) => ({
+        id: track.id,
+        artistName: track.artists[0].name,
+        songName: track.name,
+        albumName: track.album.name,
+        albumArtworkUrl: track.album.images[0].url,
+      }));
 
       return mappedData;
       // res.json([...mappedData]);

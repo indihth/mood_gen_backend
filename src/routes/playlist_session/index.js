@@ -3,6 +3,7 @@ const router = express.Router();
 const verifyFirebaseToken = require("../../middleware/auth.middleware");
 const spotifyAuthMiddleware = require("../../middleware/spotifyAuth.middleware");
 const PlaylistSessionController = require("../../controllers/playlist_session.controller");
+const VotingController = require("../../controllers/voting.controller");
 
 router.get(
   "/user-data",
@@ -39,6 +40,20 @@ router.put(
   PlaylistSessionController.joinSession
 );
 
+router.put(
+  "/:sessionId/updatePlaylist",
+  verifyFirebaseToken,
+  spotifyAuthMiddleware,
+  PlaylistSessionController.updatePlaylist
+);
+
+router.put(
+  "/:sessionId/update-status",
+  verifyFirebaseToken,
+  spotifyAuthMiddleware,
+  PlaylistSessionController.updateSessionStatus
+);
+
 router.get(
   "/:sessionId/load-playlist",
   verifyFirebaseToken,
@@ -51,6 +66,12 @@ router.post(
   verifyFirebaseToken,
   spotifyAuthMiddleware,
   PlaylistSessionController.savePlaylistToSpotify
+);
+
+router.post(
+  "/:sessionId/vote",
+  verifyFirebaseToken,
+  VotingController.handleVote
 );
 
 module.exports = router;

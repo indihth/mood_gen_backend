@@ -1,5 +1,5 @@
-const FirebaseService = require("../services/firebase.service");
-const SpotifyService = require("../services/spotify.service");
+const FirebaseService = require("../services/firebase.services");
+const SpotifyService = require("../services/spotify.services");
 const PlaylistSessionServices = require("../services/playlist_session.services");
 const session = require("express-session");
 
@@ -22,6 +22,7 @@ class PlaylistSessionController {
     }
   }
 
+  // Create a new session
   static async createSession(req, res) {
     try {
       const { title, description } = req.body;
@@ -32,6 +33,7 @@ class PlaylistSessionController {
         await PlaylistSessionServices.getUserDataAndHistory(userId, true);
 
       const sessionData = {
+        status: "waiting", // starts as 'waiting', can be 'active' or 'ended'
         sessionName: title,
         description,
         hostId: userId,
@@ -46,8 +48,6 @@ class PlaylistSessionController {
       );
 
       // TODO: integrate into _getUserDataAndHistory
-      // Add listening history to user subcollection
-      // const listeningHistoryDoc =
       await FirebaseService.setDocumentInSubcollection(
         "sessions",
         sessionRef.id,
@@ -56,19 +56,11 @@ class PlaylistSessionController {
         historyData
       );
 
-      // Add top songs to user subcollection - Need to update ListeningHistory method
-      // await FirebaseService.setDocumentInSubcollection(
-      //   "users",
-      //   userId,
-      //   "listeningHistory",
-      //   "topSongs",
-      //   historyData
-      // );
-
       console.log("sessionRef.id: ", sessionRef.id);
 
       const newSessionData = {
         sessionId: sessionRef.id,
+        status: "waiting",
         sessionName: title,
         description,
         hostDisplayName: userData[userId].displayName,
@@ -85,6 +77,7 @@ class PlaylistSessionController {
     }
   }
 
+  // Join an existing session
   static async joinSession(req, res) {
     try {
       const { sessionId } = req.params;
@@ -122,7 +115,7 @@ class PlaylistSessionController {
       const newSessionData = {
         sessionName: sessionDoc.sessionName,
         description: sessionDoc.description,
-        hostDisplayName: sessionDoc.hostId,
+        hostDisplayName: sessionDoc.users[sessionDoc.hostId].displayName,
       };
 
       return res.json({
@@ -136,6 +129,41 @@ class PlaylistSessionController {
     }
   }
 
+  // Update session status (waiting, active, ended)
+  static async updateSessionStatus(req, res) {
+    try {
+      const { sessionId } = req.params;
+      const { status } = req.body; // status: waiting, active, ended
+
+      const sessionDoc = await FirebaseService.getDocument(
+        "sessions",
+        sessionId
+      );
+
+      if (!sessionDoc) {
+        return res.status(404).json({ error: "Session not found" });
+      }
+
+      // Update status in session document
+      const updatedSessionDoc = await FirebaseService.updateDocument(
+        "sessions",
+        sessionId,
+        { status }
+      );
+
+      console.log("updatedSessionDoc: ", updatedSessionDoc);
+      return res.json({
+        message: "Successfully updated session status",
+        sessionId,
+        status,
+      });
+    } catch (error) {
+      console.error("Error updating session status:", error);
+      res.status(500).json({ error: error.message });
+    }
+  }
+
+  // Create a new playlist for the session or load an existing one
   static async loadPlaylist(req, res) {
     const { sessionId } = req.params;
     let playlistData;
@@ -151,30 +179,25 @@ class PlaylistSessionController {
         return res.status(404).json({ error: "Session not found" });
       }
 
-      if (!sessionDoc.playlist?.playlistId) {
+      if (!sessionDoc.playlistId || sessionDoc.playlistId === undefined) {
         // if none, create new playlist and save to db
+        console.log("Creating new playlist... was undefined");
         playlistData = await PlaylistSessionServices.createNewPlaylist(
           sessionId
         );
       } else {
         // get from db
         playlistData = await FirebaseService.getDocument(
-          "playlist",
-          sessionDoc.playlist.playlistId
+          "playlists",
+          sessionDoc.playlistId
         );
       }
-
-      // map playlist data to return selected fields
-      const mappedData = {
-        title: sessionDoc.sessionName,
-        description: sessionDoc.description,
-        playlistId: sessionDoc.playlist?.playlistId,
-        tracks: playlistData.tracks,
-      };
+      console.log("playlistData: ", playlistData.id);
 
       return res.json({
         message: "Successfully loaded playlist",
-        data: mappedData,
+        data: { playlistId: playlistData.id }, // frontend getting data from db, only needs id
+        // data: mappedData,
       });
     } catch (error) {
       // Handle specific error types
@@ -195,6 +218,65 @@ class PlaylistSessionController {
       });
     }
   }
+
+  // Update playlist with new listening history
+  static async updatePlaylist(req, res) {
+    try {
+      const { sessionId } = req.params;
+      let playlistData;
+
+      // Integrate new user listening history to playlist
+      const sessionDoc = await FirebaseService.getDocument(
+        "sessions",
+        sessionId
+      );
+
+      if (!sessionDoc) {
+        return res.status(404).json({ error: "Session not found" });
+      }
+
+      // Check if the session has a playlistId
+      if (!sessionDoc.playlistId || sessionDoc.playlistId === undefined) {
+        console.log("Playlist... was undefined");
+        throw new Error("PlaylistId not found");
+      } else {
+        // Get the playlist data
+        playlistData = await FirebaseService.getDocument(
+          "playlists",
+          sessionDoc.playlistId
+        );
+        if (!playlistData) {
+          throw new Error("Playlist document not found");
+        }
+      }
+
+      // Get and process listening history of user
+      const listeningHistory = await this._getListeningHistoryByUserId(
+        sessionDoc.playlistId,
+        sessionDoc.userId
+      );
+
+      // Add new tracks to the playlist (just added to map for now, no sorting)
+      const updatedTracks = { ...listeningHistory, ...playlistDoc.tracks };
+      console.log("updatedTracks : ", updatedTracks);
+
+      // Update the playlist document in Firestore
+      const updatedPlaylistDoc = await FirebaseService.updateDocument(
+        "playlists",
+        sessionDoc.playlistId,
+        { tracks: updatedTracks }
+      );
+
+      return res.json({
+        message: "Successfully updated session playlist with new user data",
+        data: updatedPlaylistDoc,
+      });
+    } catch (error) {
+      console.error("Error updating session:", error);
+      res.status(500).json({ error: error.message });
+    }
+  }
+
   static async savePlaylistToSpotify(req, res) {
     try {
       const { sessionId } = req.params;
@@ -214,19 +296,29 @@ class PlaylistSessionController {
           .json({ error: "Session name and description are required" });
       }
 
-      console.log("sessionDoc.playlistId: ", sessionDoc.playlist.playlistId);
+      console.log("sessionDoc.playlistId: ", sessionDoc.playlistId);
 
       // Get playlist data from playlist collection
       const playlistDoc = await FirebaseService.getDocument(
-        "playlist",
-        sessionDoc.playlist.playlistId
+        "playlists",
+        sessionDoc.playlistId
       );
 
-      // Get tracks from playlist data - map to Spotify track id format
-      const trackIds = playlistDoc.tracks.map(
-        (track) => `spotify:track:${track.trackId}`
+      // Remove downvoted tracks from the playlist
+      const votedTracks = await PlaylistSessionServices.removeDownvotedTracks(
+        playlistDoc
       );
-      // console.log("trackIds: ", trackIds);
+
+      console.log("votedTracks: ", votedTracks);
+
+      // Get tracks from playlist data - convert object to array and use only the keys (ids)
+      const trackIds = Object.keys(votedTracks).map(
+        (trackId) => `spotify:track:${trackId}`
+      );
+      console.log("trackIds: ", trackIds);
+
+      console.log("sessionDoc.sessionName: ", sessionDoc.sessionName);
+      console.log("sessionDoc.description: ", sessionDoc.description);
 
       // Create playlist on Spotify
       const playlist = await SpotifyService.createPlaylist(
@@ -237,6 +329,9 @@ class PlaylistSessionController {
 
       const playlistId = playlist.id;
 
+      // Remove tracks voted off by users (2 more downvotes than upvotes)
+      // const votedTracks
+
       // Save playlist to Spotify
       const tracksAdded = await SpotifyService.addTracksToPlaylist(
         playlistId,
@@ -246,7 +341,7 @@ class PlaylistSessionController {
 
       return res.json({
         message: "Successfully saved playlist",
-        data: playlistDoc,
+        // data: playlistDoc,
       });
     } catch (error) {
       res.status(500).json({ error: error.message });

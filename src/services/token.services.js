@@ -1,5 +1,5 @@
 const { spotifyApi } = require("../config/spotify.config");
-const FirebaseService = require("./firebase.service");
+const FirebaseService = require("./firebase.services");
 
 /**
  * Service class handling Spotify authentication token operations.
@@ -95,21 +95,9 @@ class TokenService {
 
   static async getSpotifyTokenData(userId) {
     try {
-      const userDoc = await FirebaseService.getDocument("users", userId);
-      // const userDoc = await db.collection("users").doc(userId).get();
-      // if (!userDoc) {
-      //   console.log(`No document found for user ${userId}`);
+      const userData = await FirebaseService.getDocument("users", userId);
 
-      //   // must return an object and not res.status() directly, helper function doens't have access to res
-      //   return {
-      //     error: true,
-      //     message: `No document found for user ${userId}`,
-      //   };
-      // }
-
-      const userData = userDoc;
-
-      if (!userDoc || !userData.spotify || !userData.spotify.access_token) {
+      if (!userData.spotify || !userData.spotify.access_token) {
         console.log(`User ${userId} has no Spotify token stored`);
         return {
           error: true,
