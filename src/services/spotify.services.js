@@ -1,4 +1,5 @@
 const { spotifyApi } = require("../config/spotify.config");
+const TokenService = require("./token.services");
 // CIRCULAR DEPENDENCY WARNING: Importing UserService while it imports SpotifyService
 const UserService = require("./user.services");
 
@@ -50,7 +51,7 @@ class SpotifyService {
       console.log("spotifyApi.getAccessToken: ", spotifyApi.getAccessToken());
 
       // Save new access token to db - move to middleware?
-      // await UserService.updateSpotifyToken(userId, tokenData);
+      await TokenService.updateSpotifyToken(userId, tokenData);
 
       return tokenData;
     } catch (error) {

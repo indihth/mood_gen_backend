@@ -1,5 +1,6 @@
 const { spotifyApi } = require("../config/spotify.config");
 const FirebaseService = require("./firebase.services");
+const UserService = require("./user.services");
 
 /**
  * Service class handling Spotify authentication token operations.
@@ -47,6 +48,15 @@ class TokenService {
       console.error("Error getting access token:", error);
       throw new Error("Failed to get access token");
     }
+  }
+
+  static async saveSpotifyToken(userId, accessTokenData) {
+    // Use FirebaseService for the actual database operation
+    await FirebaseService.setDocument("users", userId, {
+      spotify: accessTokenData,
+      spotifyConnected: true,
+      // email: userEmail,
+    });
   }
 
   /**
@@ -117,6 +127,19 @@ class TokenService {
         message: `Error fetching Spotify token for user ${userId}: ${error.message}`,
       };
     }
+  }
+
+  static async updateSpotifyToken(req) {
+    // CIRCULAR DEPENDENCY: This calls back to SpotifyService
+    const tokenData = await SpotifyService.refreshAccessToken(req);
+
+    // Use FirebaseService for the actual database operation
+    await FirebaseService.updateDocument("users", userId, {
+      ...tokenData,
+    });
+
+    // update 'last_updated' field to reflect time of changes
+    await UserService.updateUserLastActivity(userId);
   }
 }
 
