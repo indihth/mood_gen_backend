@@ -76,6 +76,10 @@ class TokenService {
 
       spotifyApi.setRefreshToken(tokenData.spotify.refresh_token);
       const data = await spotifyApi.refreshAccessToken();
+      if (data.statusCode != 200) {
+        // throw new Error("Spotify Web API error");
+        throw new Error(`Spotify Web API error: ${data.message}`);
+      }
 
       const newTokenData = {
         "spotify.access_token": data.body["access_token"],
@@ -88,7 +92,13 @@ class TokenService {
 
       return newTokenData;
     } catch (error) {
-      throw new Error(`Token refresh failed: ${error.message}`);
+      // Handle specific Spotify Web API errors
+      if (error.statusCode) {
+        throw new Error(
+          `Token refresh failed - Spotify API Error (${error.statusCode}): ${error.message}`
+        );
+      }
+      throw new Error(`Token refresh failed - ${error.message}`);
     }
   }
 
