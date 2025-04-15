@@ -5,33 +5,23 @@ const FirebaseService = require("./firebase.services");
 const SpotifyService = require("./spotify.services");
 
 class UserService {
-  // High-level business operations
-
   static async getListeningHistoryByUserId(sessionId, userId) {
-    const listeningHistoryDoc = await FirebaseService.getSubcollectionDocument(
+    const listeningHistory = await FirebaseService.getSubcollectionDocument(
       "sessions",
       sessionId,
       "listeningHistory",
       userId
     );
-    if (!listeningHistoryDoc) {
-      throw new Error("Listening history document not found for user");
-    }
-    // get the listening history for the user
-    const listeningHistory = listeningHistoryDoc.tracks;
     if (!listeningHistory) {
-      throw new Error("No listening history tracks found for user");
+      throw new Error("Listening history document not found for user");
     }
 
     // convert the listening history object to an array of tracks
     const tracks = Object.values(listeningHistory).slice(0, 10); // Get the first 10 tracks
     // const tracks = Object.values(listeningHistory); // Get all tracks
 
-    // add voting fields to tracks
-    const tracksWithVoting = this._addVotingToTracks([tracks], [userId]);
-
     // flatten the tracks array
-    const flattenedTracks = tracksWithVoting.reduce((acc, track) => {
+    const flattenedTracks = tracks.reduce((acc, track) => {
       acc[track.id] = {
         ...track,
       };
@@ -71,26 +61,31 @@ class UserService {
   }
 
   static async getUserDataAndHistory(userId, isAdmin = false) {
-    const [listeningHistory, userProfile] = await Promise.all([
-      SpotifyService.getRecentHistory(),
-      SpotifyService.getUserProfile(),
-    ]);
+    try {
+      const [listeningHistory, userProfile] = await Promise.all([
+        SpotifyService.getRecentHistory(),
+        SpotifyService.getUserProfile(),
+      ]);
 
-    const userData = {
-      [userId]: {
-        userId,
-        displayName: userProfile.display_name,
-        product: userProfile.product,
-        isAdmin,
-        joinedAt: new Date(),
-      },
-    };
+      const userData = {
+        [userId]: {
+          userId,
+          displayName: userProfile.display_name,
+          product: userProfile.product,
+          isAdmin,
+          joinedAt: new Date(),
+        },
+      };
 
-    const historyData = {
-      ...listeningHistory,
-    };
+      const historyData = {
+        ...listeningHistory,
+      };
 
-    return { userData, historyData };
+      return { userData, historyData };
+    } catch (error) {
+      console.error("Error getting user data and history:", error);
+      throw new Error("Failed to get user data and history");
+    }
   }
 
   static async updateUserLastActivity(userId) {
