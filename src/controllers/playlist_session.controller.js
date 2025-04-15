@@ -174,7 +174,6 @@ class PlaylistSessionController {
       return res.json({
         message: "Successfully loaded playlist",
         data: { playlistId: playlistData.id }, // frontend getting data from db, only needs id
-        // data: mappedData,
       });
     } catch (error) {
       // Handle specific error types
@@ -197,21 +196,42 @@ class PlaylistSessionController {
   }
 
   // Update playlist with new listening history
-  static async updatePlaylist(req, res) {
+  static async joinSessionLate(req, res) {
     try {
       const { sessionId } = req.params;
       const userId = req.session.uid; // Get user ID from session
 
-      // Call the service method to update the playlist
-      const updatedPlaylistDoc =
-        await PlaylistSessionServices.updatePlaylistWithUserHistory(
-          sessionId,
-          userId
-        );
+      // update session document with new user data
+      const sessionDoc = await FirebaseService.getDocument(
+        "sessions",
+        sessionId
+      );
 
+      if (!sessionDoc) {
+        return res.status(404).json({ error: "Session not found" });
+      }
+
+      // add user to session
+      const { sessionData } = await PlaylistSessionServices.addUserToSession(
+        sessionId,
+        userId,
+        false
+      );
+
+      // update the playlist
+      await PlaylistSessionServices.updatePlaylistWithUserHistory(
+        sessionId,
+        userId
+      );
+
+      const updatedSessionData = {
+        ...sessionData,
+        playlistId: sessionDoc.playlistId, // include playlistId for frontend
+      };
+      console.log("updatedSessionData: ", updatedSessionData);
       return res.json({
         message: "Successfully updated session playlist with new user data",
-        data: updatedPlaylistDoc,
+        session: updatedSessionData,
       });
     } catch (error) {
       console.error("Error updating playlist:", error);
