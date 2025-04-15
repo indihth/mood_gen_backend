@@ -13,7 +13,7 @@ jest.mock("../../config/spotify.config", () => ({
   },
 }));
 
-// when using mocked data, it must be cleared before each test to avoid conflicts
+// when using mocked data, it must be cleared before each test to avoid conflicts - **replaced in config file**
 beforeEach(() => {
   jest.clearAllMocks();
 });
@@ -206,4 +206,54 @@ describe("Token refresh", () => {
     // check that firebase update was not called
     expect(FirebaseService.updateDocument).not.toHaveBeenCalled;
   });
+
+  // 5 - test refresh token failure (Firebase update fails)
+  //   it("should throw an error when the Firebase update fails", async () => {
+  //     // arrange mock data
+  //     const userId = "testUserId123";
+
+  //     const mockTokenData = {
+  //       // data returned from the user document in Firestore
+  //       spotify: {
+  //         access_token: "old-access-token",
+  //         refresh_token: "test-refresh-token",
+  //         expires_in: 3600,
+  //       },
+  //     };
+
+  //     const mockApiResponse = {
+  //       // response from Spotify API
+  //       body: {
+  //         access_token: "new-access-token",
+  //         expires_in: 3600,
+  //       },
+  //       statusCode: 200,
+  //     };
+
+  //     // mock getDocument and its results using defined data above
+  //     FirebaseService.getDocument.mockResolvedValue(mockTokenData);
+
+  //     // define the mock response for the refreshAccessToken method in the spotifyApi object
+  //     spotifyApiMock.refreshAccessToken.mockResolvedValue(mockApiResponse);
+
+  //     // mock failed firebase update
+  //     FirebaseService.updateDocument
+  //       .mockRejectedValue
+  //       //   new Error("Firebase update failed")
+  //       ();
+
+  //     // act and assert - missing refresh token data should throw error
+  //     await expect(TokenService.refreshSpotifyToken(userId)).rejects.toThrow(
+  //       "Token refresh failed - Firebase update failed"
+  //     );
+
+  //     // check that the doc was queried
+  //     expect(FirebaseService.getDocument).toHaveBeenCalledWith("users", userId);
+
+  //     // check that spotifyApi was not called
+  //     expect(spotifyApiMock).not.toHaveBeenCalled;
+
+  //     // check that firebase update was not called
+  //     expect(FirebaseService.updateDocument).not.toHaveBeenCalled;
+  //   });
 });
