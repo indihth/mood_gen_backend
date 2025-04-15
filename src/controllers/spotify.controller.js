@@ -25,7 +25,7 @@ const callback = async (req, res) => {
     const accessTokenData = await TokenService.getAccessToken(req);
 
     // Save the token to Firestore
-    await UserService.saveSpotifyToken(userId, accessTokenData);
+    await TokenService.saveSpotifyToken(userId, accessTokenData);
 
     // Redirects to mobile app with success message
     res.redirect(`spotifyauth://callback?success=true`);

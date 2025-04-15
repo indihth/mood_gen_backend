@@ -1,15 +1,7 @@
-const admin = require("firebase-admin");
 const FirebaseService = require("./firebase.services");
-const SpotifyService = require("./spotify.services");
-const PlaylistSessionServices = require("./playlist_session.services");
+const UserService = require("./user.services");
 
 class PlaylistSessionService {
-  // Create a new playlist session
-  static async createPlaylistSession() {
-    // Create a new playlist session
-    // Return the playlist session ID
-  }
-
   // Get playlist session userIds
   static async _getPlaylistSessionUsers(sessionId) {
     // Get the playlist session document
@@ -22,80 +14,6 @@ class PlaylistSessionService {
     const userIds = Object.values(sessionDoc.users).map((user) => user.userId);
 
     return userIds;
-  }
-
-  static async _getListeningHistoryByUserId(sessionId, userId) {
-    const listeningHistoryDoc = await FirebaseService.getSubcollectionDocument(
-      "sessions",
-      sessionId,
-      "listeningHistory",
-      userId
-    );
-    if (!listeningHistoryDoc) {
-      throw new Error("Listening history document not found for user");
-    }
-    // get the listening history for the user
-    const listeningHistory = listeningHistoryDoc.tracks;
-    if (!listeningHistory) {
-      throw new Error("No listening history tracks found for user");
-    }
-
-    // convert the listening history object to an array of tracks
-    const tracks = Object.values(listeningHistory).slice(0, 10); // Get the first 10 tracks
-    // const tracks = Object.values(listeningHistory); // Get all tracks
-
-    // shuffle the tracks
-    const shuffledTracks = this._shuffleTracks(tracks);
-
-    // add voting fields to tracks
-    const tracksWithVoting = this._addVotingToTracks(
-      [shuffledTracks],
-      [userId]
-    );
-
-    // flatten the tracks array
-    const flattenedTracks = tracksWithVoting.reduce((acc, track) => {
-      acc[track.id] = {
-        ...track,
-      };
-      return acc;
-    }, {});
-
-    return flattenedTracks;
-  }
-
-  // get all users listening history from a playlist session
-  static async _getAllListeningHistory(sessionId) {
-    const listeningHistoryDocs = await FirebaseService.getSubcollection(
-      "sessions",
-      sessionId,
-      "listeningHistory"
-    );
-
-    if (!listeningHistoryDocs || listeningHistoryDocs.length === 0) {
-      throw new Error("No listening history found");
-    }
-
-    let allTracks = [];
-
-    const combinedTracks = {};
-    const combinedTrackOrder = [];
-
-    allTracks = listeningHistoryDocs.map((user) => ({
-      id: user.id,
-      // tracks: user.tracks.slice(0, 10), // should work bc no longer object?
-      // tracks: user.tracks, // include all for now
-      tracks: Object.values(user.tracks).slice(0, 10), // convert object to array, get first 10 tracks
-    }));
-
-    // combine all tracks from each user into a single array
-    const justTracks = allTracks.reduce((acc, user) => {
-      return acc.concat(user.tracks).splice(0, 20);
-    }, []);
-
-    const shuffledTracks = this._shuffleTracks(justTracks);
-
-    return shuffledTracks;
   }
 
   static _shuffleTracks(tracks) {
@@ -111,39 +29,61 @@ class PlaylistSessionService {
     return shuffledTracks;
   }
 
-  static _addVotingToTracks(tracks, userIds) {
-    // iterate over userIds array and adds fields with userId as key to track votes
-    const votedBy = userIds.reduce((acc, userId) => {
-      acc[userId] = {
-        upVoted: false,
-        downVoted: false,
-      };
-      return acc;
-    }, {});
+  static async _addVotingStructureToTracks(sessionId, tracks) {
+    try {
+      // Get all userIds in the session
+      const userIds = await this._getPlaylistSessionUsers(sessionId);
 
-    // add voting fields to each track
-    return tracks.map((track) => {
-      return {
-        ...track,
-        upVotes: 0,
-        downVotes: 0,
-        votedBy,
-      };
-    });
+      // Add voting fields to each track
+      return Object.entries(tracks).reduce((acc, [trackId, track]) => {
+        // if they don't already exist, set vote fiels to 0
+        const existingUpVotes = track.upVotes || 0;
+        const existingDownVotes = track.downVotes || 0;
+
+        // preserve existing votedBy structure if it exists, otherwise create a new one
+        let votedBy = track.votedBy || {};
+
+        // add voteBy fields for each userId
+        userIds.forEach((userId) => {
+          if (!votedBy[userId]) {
+            // exclude existing users - don't overwrite their votes
+            votedBy[userId] = {
+              upVoted: false,
+              downVoted: false,
+            };
+          }
+        });
+
+        // add other track fields and voting structure together and return
+        acc[trackId] = {
+          ...track,
+          upVotes: existingUpVotes,
+          downVotes: existingDownVotes,
+          votedBy,
+        };
+        return acc;
+      }, {});
+    } catch (error) {
+      console.error("Error adding voting structure to tracks:", error);
+      throw new Error(`Failed to add voting structure: ${error.message}`);
+    }
   }
 
-  // Create base playlist
   static async _createTrackList(sessionId) {
     const sessionDoc = await FirebaseService.getDocument("sessions", sessionId);
     if (!sessionDoc) {
       throw new Error("Session not found");
     }
-    const listeningHistory = await this._getAllListeningHistory(sessionId);
+    const tracks = await UserService.getAllListeningHistory(sessionId);
 
-    const userIds = await this._getPlaylistSessionUsers(sessionId);
+    // shuffle the tracks
+    const shuffledTracks = this._shuffleTracks(tracks);
 
-    // add voting to tracks
-    const tracksWithVoting = this._addVotingToTracks(listeningHistory, userIds);
+    // add the voting structure to the tracks
+    const tracksWithVoting = await this._addVotingStructureToTracks(
+      sessionId,
+      shuffledTracks
+    );
 
     // create flattened array of objects, .reduce instead of .map
     const flattenedTracks = tracksWithVoting.reduce((acc, track) => {
@@ -177,24 +117,98 @@ class PlaylistSessionService {
     return updatedSessionDoc;
   }
 
+  static _filterUniqueNewTracks(newTracks, existingTracks) {
+    // filter out tracks that already exist in the existingTracks object
+    const uniqueNewTracks = Object.entries(newTracks).reduce(
+      (acc, [trackId, track]) => {
+        if (!existingTracks[trackId]) {
+          // if the track doesn't exist in existingTracks, add it
+          acc[trackId] = track;
+        }
+        return acc;
+      },
+      {}
+    );
+
+    // console.log("uniqueNewTracks:", uniqueNewTracks);
+
+    return uniqueNewTracks;
+  }
+
+  static async _processUserTracks(sessionId, userId, skipVoting = false) {
+    // get listening history of user
+    const listeningHistory = await UserService.getListeningHistoryByUserId(
+      sessionId,
+      userId
+    );
+
+    if (!listeningHistory) {
+      throw new Error("No listening history found for user");
+    }
+
+    // process the listening history
+    const tracks = Object.values(listeningHistory);
+    const shuffledTracks = this._shuffleTracks(tracks);
+
+    // convert to flat object structure with track ID as key
+    const tracksMap = shuffledTracks.reduce((acc, track) => {
+      acc[track.id] = track;
+      return acc;
+    }, {});
+
+    // Skip adding voting structure if flag is set
+    if (skipVoting) {
+      return tracksMap;
+    }
+
+    // Add voting structure if needed
+    return await this._addVotingStructureToTracks(sessionId, tracksMap);
+  }
+
   static async createNewPlaylist(sessionId) {
     // Create the playlist
-    const playlistData = await this._createTrackList(sessionId);
+    // const playlistData = await this._createTrackList(sessionId);
 
-    // Store playlist data in the playlist collection
+    const sessionDoc = await FirebaseService.getDocument("sessions", sessionId);
+    if (!sessionDoc) {
+      throw new Error("Session not found");
+    }
+
+    // get tracks from all users
+    const userIds = await this._getPlaylistSessionUsers(sessionId);
+
+    const allTracks = await Promise.all(
+      userIds.map((userId) => this._processUserTracks(sessionId, userId))
+    );
+
+    // merge all user tracks
+    const mergedTracks = allTracks.reduce(
+      (acc, userTracks) => ({
+        ...acc,
+        ...userTracks,
+      }),
+      {}
+    );
+
+    const playlistData = {
+      title: sessionDoc.sessionName,
+      description: sessionDoc.description,
+      tracks: mergedTracks,
+    };
+
+    // store playlist data
     const addedPlaylistDoc = await FirebaseService.setDocument(
       "playlists",
       "",
       playlistData
     );
 
-    // Add playlist ID to the session document
+    // add playlist ID to the session document
     await this._addPlaylistToSessionDoc(sessionId, addedPlaylistDoc.id);
 
     return addedPlaylistDoc;
   }
 
-  // Remove downvoted tracks from the playlist
   static async removeDownvotedTracks(playlistDoc) {
     if (playlistDoc === null) {
       throw new Error("Playlist not found");
@@ -225,27 +239,113 @@ class PlaylistSessionService {
     return sessionDoc;
   }
 
-  static async getUserDataAndHistory(userId, isAdmin = false) {
-    const [listeningHistory, userProfile] = await Promise.all([
-      SpotifyService.getRecentHistory(),
-      SpotifyService.getUserProfile(),
-    ]);
-
-    const userData = {
-      [userId]: {
+  // add user (host or guest) to session with their listening history
+  static async addUserToSession(sessionId, userId, isHost = false) {
+    try {
+      // get user data and listening history
+      const { userData, historyData } = await UserService.getUserDataAndHistory(
         userId,
-        displayName: userProfile.display_name,
-        product: userProfile.product,
-        isAdmin,
-        joinedAt: new Date(),
-      },
-    };
+        isHost
+      );
 
-    const historyData = {
-      ...listeningHistory,
-    };
+      // update the session document
+      await FirebaseService.addToDocument(
+        "sessions",
+        sessionId,
+        userData,
+        "users"
+      );
 
-    return { userData, historyData };
+      // add listening history to the session subcollection
+      await FirebaseService.setDocumentInSubcollection(
+        "sessions",
+        sessionId,
+        "listeningHistory",
+        userId,
+        historyData
+      );
+
+      // get updated session data
+      const sessionDoc = await FirebaseService.getDocument(
+        "sessions",
+        sessionId
+      );
+
+      return {
+        userData,
+        sessionData: {
+          sessionName: sessionDoc.sessionName,
+          description: sessionDoc.description,
+          hostDisplayName:
+            sessionDoc.users[sessionDoc.hostId]?.displayName || "Unknown Host",
+        },
+      };
+    } catch (error) {
+      console.error("Error adding user to session:", error);
+      throw new Error(`Failed to add user to session: ${error.message}`);
+    }
+  }
+
+  // Update playlist with new tracks from a user's listening history
+  static async updatePlaylistWithUserHistory(sessionId, userId) {
+    try {
+      const sessionDoc = await FirebaseService.getDocument(
+        "sessions",
+        sessionId
+      );
+
+      // Check if the session has a playlistId
+      if (!sessionDoc.playlistId) {
+        throw new Error("PlaylistId not found");
+      }
+
+      // Get the playlist data
+      const playlistData = await FirebaseService.getDocument(
+        "playlists",
+        sessionDoc.playlistId
+      );
+
+      if (!playlistData) {
+        throw new Error("Playlist document not found");
+      }
+
+      // process new user's tracks without voting structure
+      const newTracksMap = await this._processUserTracks(
+        sessionId,
+        userId,
+        true
+      );
+
+      // remove tracks from newTracksMap if they already exist in playlistData.tracks
+      const newUniqueTracks = this._filterUniqueNewTracks(
+        newTracksMap,
+        playlistData.tracks
+      );
+
+      // Merge with existing tracks, new tracks will overwrite if same ID
+      const updatedTracks = {
+        ...playlistData.tracks,
+        ...newUniqueTracks,
+      };
+
+      // add voting structure to tracks, updating existing tracks with new user voteBy fields
+      const tracksWithVoting = await this._addVotingStructureToTracks(
+        sessionId,
+        updatedTracks
+      );
+
+      // Update the playlist document in Firestore and return the updated document
+      const updatedPlaylist = await FirebaseService.updateDocument(
+        "playlists",
+        sessionDoc.playlistId,
+        { tracks: tracksWithVoting }
+      );
+
+      return updatedPlaylist;
+    } catch (error) {
+      console.error("Error updating playlist:", error);
+      throw new Error(`Failed to update playlist: ${error.message}`);
+    }
   }
 }
 

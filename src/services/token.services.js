@@ -1,5 +1,6 @@
 const { spotifyApi } = require("../config/spotify.config");
 const FirebaseService = require("./firebase.services");
+const UserService = require("./user.services");
 
 /**
  * Service class handling Spotify authentication token operations.
@@ -49,6 +50,15 @@ class TokenService {
     }
   }
 
+  static async saveSpotifyToken(userId, accessTokenData) {
+    // Use FirebaseService for the actual database operation
+    await FirebaseService.setDocument("users", userId, {
+      spotify: accessTokenData,
+      spotifyConnected: true,
+      // email: userEmail,
+    });
+  }
+
   /**
    * Refreshes the Spotify access token using stored refresh token and updates Firestore.
    * @static
@@ -73,12 +83,28 @@ class TokenService {
         "spotify.last_updated": new Date(),
       };
 
-      await FirebaseService.updateDocument("users", userId, newTokenData);
+      const dbUpdate = await FirebaseService.updateDocument(
+        "users",
+        userId,
+        newTokenData
+      );
+
+      // To test if db update was successful - TODO
+      // if (dbUpdate.error?.message) {
+      //   throw new Error("Failed to update Firestore with new token data");
+      // }
+
       spotifyApi.setAccessToken(data.body["access_token"]);
 
       return newTokenData;
     } catch (error) {
-      throw new Error(`Token refresh failed: ${error.message}`);
+      // Handle specific Spotify Web API errors
+      if (error.statusCode) {
+        throw new Error(
+          `Token refresh failed - Spotify API Error (${error.statusCode}): ${error.message}`
+        );
+      }
+      throw new Error(`Token refresh failed - ${error.message}`);
     }
   }
 
@@ -117,6 +143,19 @@ class TokenService {
         message: `Error fetching Spotify token for user ${userId}: ${error.message}`,
       };
     }
+  }
+
+  static async updateSpotifyToken(req) {
+    // CIRCULAR DEPENDENCY: This calls back to SpotifyService
+    const tokenData = await SpotifyService.refreshAccessToken(req);
+
+    // Use FirebaseService for the actual database operation
+    await FirebaseService.updateDocument("users", userId, {
+      ...tokenData,
+    });
+
+    // update 'last_updated' field to reflect time of changes
+    await UserService.updateUserLastActivity(userId);
   }
 }
 

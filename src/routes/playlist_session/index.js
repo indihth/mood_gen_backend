@@ -41,23 +41,21 @@ router.put(
 );
 
 router.put(
-  "/:sessionId/updatePlaylist",
+  "/:sessionId/join-late",
   verifyFirebaseToken,
   spotifyAuthMiddleware,
-  PlaylistSessionController.updatePlaylist
+  PlaylistSessionController.joinSessionLate
 );
 
 router.put(
   "/:sessionId/update-status",
   verifyFirebaseToken,
-  spotifyAuthMiddleware,
   PlaylistSessionController.updateSessionStatus
 );
 
 router.get(
   "/:sessionId/load-playlist",
   verifyFirebaseToken,
-  spotifyAuthMiddleware,
   PlaylistSessionController.loadPlaylist
 );
 
