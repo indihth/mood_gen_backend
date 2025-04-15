@@ -100,11 +100,12 @@ describe("PlaylistSessionService", () => {
       });
     });
 
-    describe("where the user is host and is unsuccessful", () => {
+    describe("where the user service is unsuccessful", () => {
       it("should throw an error when getUserDataAndHistory fails", async () => {
         // arrange mock data
         const getUserDataAndHistorySpy = jest
           .spyOn(UserService, "getUserDataAndHistory")
+          // copying error message from the actual user service
           .mockRejectedValue(new Error("Failed to get user data and history"));
 
         const addUserSpy = jest.spyOn(
@@ -129,6 +130,65 @@ describe("PlaylistSessionService", () => {
 
         // verify firebase methods were not called since error was thrown
         expect(FirebaseService.addToDocument).not.toHaveBeenCalled();
+        expect(
+          FirebaseService.setDocumentInSubcollection
+        ).not.toHaveBeenCalled();
+        expect(FirebaseService.getDocument).not.toHaveBeenCalled();
+      });
+    });
+
+    describe("where the firebase service fails", () => {
+      it("should throw an error when firebase addToDocument fails", async () => {
+        // arrange mock data
+        const getUserDataAndHistorySpy = jest
+          .spyOn(UserService, "getUserDataAndHistory")
+          .mockResolvedValue({
+            userData: {
+              "test-user-id": {
+                userId: "test-user-id",
+                displayName: "Test User",
+                product: "premium",
+                isAdmin: true,
+                joinedAt: Date.now(),
+              },
+            },
+            historyData: {
+              "test-track-id": {
+                artistName: "Test Artist",
+                songName: "Test Song",
+                albumName: "Test Album",
+                albumArtworkUrl: "https://test.com/album-art.jpg",
+              },
+            },
+          });
+
+        const addUserSpy = jest.spyOn(
+          PlaylistSessionService,
+          "addUserToSession"
+        );
+
+        // mock firebase failure
+        FirebaseService.addToDocument.mockRejectedValue(
+          new Error("Firebase add document failed")
+        );
+
+        // call and check it throws error
+        await expect(
+          PlaylistSessionService.addUserToSession(
+            "test-session-id",
+            "test-user-id",
+            true
+          )
+        ).rejects.toThrow(
+          "Failed to add user to session: Firebase add document failed"
+        );
+
+        // verify spies were called
+        expect(addUserSpy).toHaveBeenCalled(); // main method
+        expect(getUserDataAndHistorySpy).toHaveBeenCalled(); // methods within main
+        expect(FirebaseService.addToDocument).toHaveBeenCalled();
+
+        // verify remaining firebase methods were not called after error
         expect(
           FirebaseService.setDocumentInSubcollection
         ).not.toHaveBeenCalled();
