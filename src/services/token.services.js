@@ -76,10 +76,6 @@ class TokenService {
 
       spotifyApi.setRefreshToken(tokenData.spotify.refresh_token);
       const data = await spotifyApi.refreshAccessToken();
-      if (data.statusCode != 200) {
-        // throw new Error("Spotify Web API error");
-        throw new Error(`Spotify Web API error: ${data.message}`);
-      }
 
       const newTokenData = {
         "spotify.access_token": data.body["access_token"],
@@ -87,7 +83,17 @@ class TokenService {
         "spotify.last_updated": new Date(),
       };
 
-      await FirebaseService.updateDocument("users", userId, newTokenData);
+      const dbUpdate = await FirebaseService.updateDocument(
+        "users",
+        userId,
+        newTokenData
+      );
+
+      // To test if db update was successful - TODO
+      // if (dbUpdate.error?.message) {
+      //   throw new Error("Failed to update Firestore with new token data");
+      // }
+
       spotifyApi.setAccessToken(data.body["access_token"]);
 
       return newTokenData;
