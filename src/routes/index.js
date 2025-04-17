@@ -6,11 +6,13 @@ const router = express.Router();
 const authRoutes = require("./auth/auth");
 const spotifyRoutes = require("./spotify/index");
 const playlistSessionRoutes = require("./playlist_session/index");
+const userRoutes = require("./user/index");
 
 // Define path prefixes for different route categories
 router.use("/auth", authRoutes); // All authentication-related routes will be under /api/auth/*
 router.use("/spotify", spotifyRoutes); // All Spotify-related routes will be under /api/spotify/*
 router.use("/playlist-sessions", playlistSessionRoutes); // All playlist session-related routes will be under /api/playlist-session/*
+router.use("/user", userRoutes); // All user-related routes will be under /api/user/*
 
 // You might also want to add a simple health check endpoint
 router.get("/health", (req, res) => {

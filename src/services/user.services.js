@@ -93,6 +93,32 @@ class UserService {
       "spotify.last_updated": new Date(),
     });
   }
+
+  static async getUserData(userId) {
+    const userData = await FirebaseService.getDocument("users", userId);
+    try {
+      if (!userData) {
+        throw new Error("User not found");
+      }
+    } catch (error) {
+      console.error("Error getting user data:", error);
+      throw new Error("Failed to get user data");
+    }
+    return userData;
+  }
+
+  //TODO!
+  static async getUserSessions(userId) {
+    const sessions = await FirebaseService.getSubcollection(
+      "users",
+      userId,
+      "sessions"
+    );
+    if (!sessions) {
+      throw new Error("No sessions found for user");
+    }
+    return sessions;
+  }
 }
 
 module.exports = UserService;
