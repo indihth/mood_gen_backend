@@ -9,4 +9,6 @@ router.get(
   UserController.getSpotifyConnectStatus
 );
 
+router.get("/sessions", verifyFirebaseToken, UserController.getUserSessions);
+
 module.exports = router;

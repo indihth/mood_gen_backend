@@ -265,8 +265,6 @@ class PlaylistSessionService {
         historyData
       );
 
-      //TODO: add session to the user's session list
-
       // get updated session data
       const sessionDoc = await FirebaseService.getDocument(
         "sessions",

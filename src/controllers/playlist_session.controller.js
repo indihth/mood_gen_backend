@@ -36,6 +36,8 @@ class PlaylistSessionController {
         description,
         hostId: userId,
         users: {}, // empty initially, filled when a user is added
+        createdAt: new Date(),
+        updatedAt: new Date(),
       };
 
       // create the session document

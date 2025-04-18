@@ -168,6 +168,27 @@ class FirebaseService {
     }
   }
 
+  static async queryNestedField(collection, field, value) {
+    try {
+      const snapshot = await admin
+        .firestore()
+        .collection(collection)
+        .where(field, "==", value)
+        .get();
+
+      if (snapshot.empty) {
+        console.log("No matching documents found.");
+        throw new Error("No matching documents found.");
+      }
+
+      // returns an array of documents with id and data
+      return snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
+    } catch (error) {
+      console.error("Error querying nested field:", error);
+      throw new Error(`Firebase query nested field failed: ${error.message}`);
+    }
+  }
+
   static async verifyToken(token) {
     try {
       return await admin.auth().verifyIdToken(token);
