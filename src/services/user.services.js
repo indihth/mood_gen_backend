@@ -109,14 +109,26 @@ class UserService {
 
   //TODO!
   static async getUserSessions(userId) {
-    const sessions = await FirebaseService.getSubcollection(
-      "users",
-      userId,
-      "sessions"
-    );
-    if (!sessions) {
-      throw new Error("No sessions found for user");
+    const userDocument = await FirebaseService.getDocument("users", userId);
+    if (!userDocument) {
+      throw new Error("No document found for user");
     }
+
+    const sessionIds = userDocument.sessionIds || []; // gets the sessionIds array from the user document
+
+    if (!sessionIds || sessionIds.length === 0) {
+      console.log("No sessions found for this user");
+      return []; // return empty array if no sessions found
+    }
+
+    // retrieving all sessions for the user
+    const sessions = await FirebaseService.getDocumentsByInQuery(
+      "sessions",
+      sessionIds
+    );
+
+    console.log("Services - Sessions found for this user:", sessions);
+
     return sessions;
   }
 }

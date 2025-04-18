@@ -1,4 +1,5 @@
 const FirebaseService = require("../services/firebase.services");
+const UserService = require("../services/user.services");
 
 class UserController {
   static async getSpotifyConnectStatus(req, res) {
@@ -29,31 +30,37 @@ class UserController {
       const userId = req.session.uid;
 
       // Firebase query to get all sessions for the user from session collection
-      const sessions = await FirebaseService.queryNestedField(
-        "sessions",
-        "users.${userId}.userId",
-        userId
-      );
+      const sessions = await UserService.getUserSessions(userId);
 
       if (!sessions || sessions.length === 0) {
+        console.log("No sessions found for this user");
+
+        // not an error but no sessions found
         return res
-          .status(404)
-          .json({ message: "No sessions found for this user" });
+          .status(201)
+          .json({ message: "No sessions found for this user", sessions: [] });
       }
 
-      return (sessionData = sessions.map((session) => {
+      const sessionData = sessions.map((session) => {
         return {
           id: session.id,
-          description: session.description,
-          hostId: session.hostId,
-          sessionName: session.sessionName,
-          status: session.status,
-          users: session.users,
-          playlistId: session.playlistId,
-          updatedAt: session.updatedAt,
-          createdAt: session.createdAt,
+          description: session.data.description,
+          hostId: session.data.hostId,
+          sessionName: session.data.sessionName,
+          status: session.data.status,
+          users: session.data.users,
+          playlistId: session.data.playlistId,
+          updatedAt: session.data.updatedAt,
+          createdAt: session.data.createdAt,
         };
-      }));
+      });
+
+      //   console.log("Sessions found for this user:", sessionData);
+
+      return res.status(200).json({
+        message: "User's sessions retrieved successfully",
+        sessions: sessionData,
+      });
     } catch (error) {
       // throw error
       console.error("Error getting user's sessions:", error);

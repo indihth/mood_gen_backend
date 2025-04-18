@@ -256,6 +256,14 @@ class PlaylistSessionService {
         "users"
       );
 
+      // update user document with sessionId
+      await FirebaseService.updateArrayField(
+        "users",
+        userId,
+        "sessionIds",
+        sessionId
+      );
+
       // add listening history to the session subcollection
       await FirebaseService.setDocumentInSubcollection(
         "sessions",
