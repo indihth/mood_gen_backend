@@ -1,5 +1,6 @@
 // src/services/firebase.service.js
 const admin = require("firebase-admin");
+const { FieldPath } = require("firebase-admin/firestore");
 
 class FirebaseService {
   // Low-level Firebase operations
@@ -100,6 +101,40 @@ class FirebaseService {
     } catch (error) {
       console.error("Error updating document field:", error);
       throw new Error(`Firebase add document field failed: ${error.message}`);
+    }
+  }
+
+  static async updateArrayField(collection, docId, field, data) {
+    try {
+      const docRef = admin.firestore().collection(collection).doc(docId);
+      await docRef.update({
+        [field]: admin.firestore.FieldValue.arrayUnion(data), // arrayUnion adds the data to the array, not overwriting it
+      });
+    } catch (error) {
+      console.error("Error updating array field:", error);
+      throw new Error(`Firebase update array field failed: ${error.message}`);
+    }
+  }
+
+  static async getDocumentsByInQuery(collection, values) {
+    try {
+      const snapshot = await admin
+        .firestore()
+        .collection(collection)
+        .where(FieldPath.documentId(), "in", values)
+        .get();
+
+      // iterate through the documents and push them to the array - needs .map(), not .forEach()
+      const documents = snapshot.docs.map((doc) => {
+        return { id: doc.id, data: doc.data() };
+      });
+
+      return documents;
+    } catch (error) {
+      console.error("Error getting documents by IN query:", error);
+      throw new Error(
+        `Firebase get documents by IN query failed: ${error.message}`
+      );
     }
   }
 
