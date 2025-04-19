@@ -9,7 +9,7 @@ class UserController {
       // get user document from Firebase
       const userDoc = await FirebaseService.getDocument("users", userId);
       if (!userDoc) {
-        return res.status(404).json({ message: "User not found" });
+        return res.status(204).json({ message: "User not found" }); // no content - not an error
       }
 
       const userInfo = {
@@ -65,6 +65,35 @@ class UserController {
       // throw error
       console.error("Error getting user's sessions:", error);
       res.json({ message: error.message });
+    }
+  }
+
+  static async createNewUser(req, res) {
+    console.log("Creating new user in controller");
+    try {
+      const userId = req.session.uid;
+      const { username } = req.body;
+
+      if (!username) {
+        return res
+          .status(400)
+          .json({ message: "Username and email are required" });
+      }
+
+      console.log(
+        `Creating new user with: ${userId} and username: ${username}`
+      );
+
+      // create new user document in Firebase
+      const newUser = await UserService.createNewUser(userId, username);
+
+      res.status(200).json({
+        message: "New user created successfully",
+        user: newUser,
+      });
+    } catch (error) {
+      console.error("Error creating new user:", error);
+      res.status(500).json({ message: error.message });
     }
   }
 

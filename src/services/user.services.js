@@ -131,6 +131,22 @@ class UserService {
 
     return sessions;
   }
+
+  // create new user document on registration
+  static async createNewUser(userId, username) {
+    try {
+      console.log("Creating new user inservices");
+      const newUser = await FirebaseService.setDocument("users", userId, {
+        username,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      });
+      return newUser;
+    } catch (error) {
+      console.error("Error creating new user in Firebase:", error);
+      throw new Error("Failed to create new user in Firebase");
+    }
+  }
 }
 
 module.exports = UserService;

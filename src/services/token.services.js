@@ -52,7 +52,8 @@ class TokenService {
 
   static async saveSpotifyToken(userId, accessTokenData) {
     // Use FirebaseService for the actual database operation
-    await FirebaseService.setDocument("users", userId, {
+    // changed to 'updateDocument' to avoid overwriting existing data
+    await FirebaseService.updateDocument("users", userId, {
       spotify: accessTokenData,
       spotifyConnected: true,
       // email: userEmail,
