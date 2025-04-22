@@ -107,7 +107,6 @@ class UserService {
     return userData;
   }
 
-  //TODO!
   static async getUserSessions(userId) {
     const userDocument = await FirebaseService.getDocument("users", userId);
     if (!userDocument) {
@@ -118,7 +117,10 @@ class UserService {
 
     if (!sessionIds || sessionIds.length === 0) {
       console.log("No sessions found for this user");
-      return []; // return empty array if no sessions found
+      return {
+        sessions: [],
+        message: "No sessions found for this user",
+      };
     }
 
     // retrieving all sessions for the user
@@ -127,9 +129,61 @@ class UserService {
       sessionIds
     );
 
-    console.log("Services - Sessions found for this user:", sessions);
+    // returns object with needed data from each session
+    const sessionData = sessions.map((session) => {
+      return {
+        id: session.id,
+        description: session.data.description,
+        hostId: session.data.hostId,
+        sessionName: session.data.sessionName,
+        topTrackImageUrl: session.data.topTrackImageUrl,
+        status: session.data.status,
+        users: session.data.users,
+        playlistId: session.data.playlistId,
+        updatedAt: session.data.updatedAt,
+        createdAt: session.data.createdAt,
+      };
+    });
 
-    return sessions;
+    return sessionData;
+  }
+
+  // get image url from top track in session
+  static async getTopTrackImageUrl(tracks) {
+    try {
+      // convert object to array
+      const tracksArray = Array.isArray(tracks)
+        ? tracks
+        : Object.values(tracks);
+
+      // sort by votes
+      const sortedTracks = tracksArray.sort((a, b) => {
+        const aVotes = a.upVotes || 0;
+        const bVotes = b.upVotes || 0;
+        return bVotes - aVotes;
+      });
+
+      const topTrack = sortedTracks[0]; // the first track
+
+      return topTrack.albumArtworkUrl; // return the image URL of the top track
+    } catch (error) {
+      console.error("Error getting top track image URL:", error);
+      throw new Error("Failed to get top track image URL");
+    }
+  }
+
+  // get image url from playlistId
+  static async getPlaylistImageUrl(playlistId) {
+    try {
+      const playlist = await SpotifyService.getPlaylist(playlistId);
+      if (!playlist) {
+        throw new Error("Playlist not found");
+      }
+      return playlist.images[0].url;
+    } catch (error) {
+      console.error("Error getting playlist image URL:", error);
+      throw new Error("Failed to get playlist image URL");
+    }
   }
 
   // create new user document on registration

@@ -41,25 +41,9 @@ class UserController {
           .json({ message: "No sessions found for this user", sessions: [] });
       }
 
-      const sessionData = sessions.map((session) => {
-        return {
-          id: session.id,
-          description: session.data.description,
-          hostId: session.data.hostId,
-          sessionName: session.data.sessionName,
-          status: session.data.status,
-          users: session.data.users,
-          playlistId: session.data.playlistId,
-          updatedAt: session.data.updatedAt,
-          createdAt: session.data.createdAt,
-        };
-      });
-
-      //   console.log("Sessions found for this user:", sessionData);
-
       return res.status(200).json({
         message: "User's sessions retrieved successfully",
-        sessions: sessionData,
+        sessions: sessions,
       });
     } catch (error) {
       // throw error
@@ -95,6 +79,14 @@ class UserController {
       console.error("Error creating new user:", error);
       res.status(500).json({ message: error.message });
     }
+  }
+
+  static async getDashboardData(userId) {
+    // Get users part sessions - name, description, users
+    const sessions = UserService.getUserSessions(userId); // returns all session for a user
+
+    // Get users current/most recent session - name, description, users and image for the playlist (top voted track?)
+    // Get
   }
 
   //TODO: get saved Spotify playlists from Firebase
