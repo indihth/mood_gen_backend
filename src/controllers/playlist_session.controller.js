@@ -130,7 +130,25 @@ class PlaylistSessionController {
         { status }
       );
 
-      console.log("updatedSessionDoc: ", updatedSessionDoc);
+      // if ending session, save top track image to playlist document
+      if (status === "ended") {
+        const playlistDoc = await FirebaseService.getDocument(
+          "playlists",
+          sessionDoc.playlistId
+        );
+
+        const topTrackImageUrl = await UserService.getTopTrackImageUrl(
+          playlistDoc.tracks
+        );
+
+        // store playlist image in sesson document
+        const updatedPlaylistDoc = await FirebaseService.updateDocument(
+          "sessions",
+          sessionId,
+          { topTrackImageUrl }
+        );
+      }
+
       return res.json({
         message: "Successfully updated session status",
         sessionId,
