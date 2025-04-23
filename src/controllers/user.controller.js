@@ -25,7 +25,7 @@ class UserController {
   }
 
   //TODO: get user sessions from Firebase
-  static async getUserSessions(req, res) {
+  static async populateDashboard(req, res) {
     try {
       const userId = req.session.uid;
 
