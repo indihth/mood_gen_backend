@@ -1,4 +1,4 @@
-const FirebaseService = require("../../services/firebase.services");
+const FirebaseService = require("../firebase.services");
 const PlaylistSessionService = require("../playlist_session.services");
 const UserService = require("../user.services");
 
