@@ -27,6 +27,13 @@ const callback = async (req, res) => {
     // Save the token to Firestore
     await TokenService.saveSpotifyToken(userId, accessTokenData);
 
+    // get Spotify displayName
+    const spotifyUserProfile = await SpotifyService.getUserProfile();
+
+    // store Spotify UserProfile in Firestore?
+    await UserService.updateUsername(userId, spotifyUserProfile.display_name);
+    console.log("Spotify User Profile:", spotifyUserProfile);
+
     // Redirects to mobile app with success message
     res.redirect(`spotifyauth://callback?success=true`);
   } catch (error) {

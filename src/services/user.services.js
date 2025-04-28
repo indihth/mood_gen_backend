@@ -201,6 +201,26 @@ class UserService {
       throw new Error("Failed to create new user in Firebase");
     }
   }
+
+  // update username in Firebase
+  static async updateUsername(userId, username) {
+    try {
+      const updatedUser = await FirebaseService.updateDocument(
+        "users",
+        userId,
+        {
+          username,
+          updatedAt: new Date(),
+        }
+      );
+      return updatedUser;
+    } catch (error) {
+      console.error("Error updating username in Firebase:", error);
+      throw new Error("Failed to update username in Firebase");
+    }
+  }
+
+  // set Firebase Admin displayName
 }
 
 module.exports = UserService;
