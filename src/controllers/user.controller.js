@@ -32,6 +32,14 @@ class UserController {
       // Firebase query to get all sessions for the user from session collection
       const sessions = await UserService.getUserSessions(userId);
 
+      // Get updated user displayname
+      const userData = await UserService.getUserData(userId);
+
+      const sortedUserData = {
+        displayName: userData.displayName ?? "",
+        spotifyConnected: userData.spotifyConnected ?? false,
+      };
+
       if (!sessions || sessions.length === 0) {
         console.log("No sessions found for this user");
 
@@ -44,6 +52,7 @@ class UserController {
       return res.status(200).json({
         message: "User's sessions retrieved successfully",
         sessions: sessions,
+        userData: sortedUserData,
       });
     } catch (error) {
       // throw error
@@ -79,14 +88,6 @@ class UserController {
       console.error("Error creating new user:", error);
       res.status(500).json({ message: error.message });
     }
-  }
-
-  static async getDashboardData(userId) {
-    // Get users part sessions - name, description, users
-    const sessions = UserService.getUserSessions(userId); // returns all session for a user
-
-    // Get users current/most recent session - name, description, users and image for the playlist (top voted track?)
-    // Get
   }
 
   //TODO: get saved Spotify playlists from Firebase
